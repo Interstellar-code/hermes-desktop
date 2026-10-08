@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // ── Shared state for capturing HTTP requests (hoisted before mocks) ──
 
-const { capturedRequests, makeMockRequest, stopHealthPolling } = vi.hoisted(() => {
+const { capturedRequests, makeMockRequest } = vi.hoisted(() => {
   const capturedRequests: Array<{
     url: string;
     options: Record<string, unknown>;
@@ -12,7 +12,12 @@ const { capturedRequests, makeMockRequest, stopHealthPolling } = vi.hoisted(() =
   function makeMockRequest(
     url: string,
     options: Record<string, unknown>,
-  ) {
+  ): {
+    write: (body: string) => void;
+    end: () => void;
+    on: (event: string, cb: () => void) => void;
+    destroy: () => void;
+  } {
     return {
       write: (body: string) => {
         capturedRequests.push({ url, options, body });
@@ -23,7 +28,10 @@ const { capturedRequests, makeMockRequest, stopHealthPolling } = vi.hoisted(() =
     };
   }
 
-  return { capturedRequests, makeMockRequest, stopHealthPolling: () => capturedRequests.splice(0) };
+  return {
+    capturedRequests,
+    makeMockRequest,
+  };
 });
 
 // ── Mock Node.js http/https modules ──
@@ -64,6 +72,7 @@ vi.mock("../src/main/installer", () => ({
 
 vi.mock("../src/main/config", () => ({
   getModelConfig: () => ({ model: "test-model", provider: "openrouter" }),
+  getConfigValue: () => "",
   readEnv: () => ({}),
   getConnectionConfig: () => ({
     mode: "remote" as const,
@@ -101,7 +110,11 @@ vi.mock("../src/main/process-options", () => ({
 
 // ── Import module under test ──
 
-import { sendMessage, stopHealthPolling as realStopHealthPolling } from "../src/main/hermes";
+import {
+  sendMessage,
+  stopHealthPolling as realStopHealthPolling,
+} from "../src/main/hermes";
+import type { ConnectionConfig } from "../src/main/config";
 
 describe("sendMessageViaApi forwards resumeSessionId", () => {
   beforeEach(() => {
@@ -176,5 +189,141 @@ describe("sendMessageViaApi forwards resumeSessionId", () => {
     const parsed = JSON.parse(chatRequest!.body);
 
     expect(parsed).not.toHaveProperty("session_id");
+  });
+
+  it("sends the X-Hermes-Session-Id request header when resuming", async () => {
+    const testSessionId = "session-abc-123";
+
+    await sendMessage(
+      "hello",
+      {
+        onChunk: () => {},
+        onDone: () => {},
+        onError: () => {},
+      },
+      "default",
+      testSessionId,
+    );
+
+    const chatRequest = capturedRequests.find((r) =>
+      r.url.includes("/v1/chat/completions"),
+    );
+    expect(chatRequest).toBeDefined();
+    const headers = chatRequest!.options.headers as Record<string, string>;
+
+    // The gateway resumes an existing session from this request header;
+    // the session_id body field is ignored. Without it every request
+    // forks a new server-side session (issue #226).
+    expect(headers["X-Hermes-Session-Id"]).toBe(testSessionId);
+  });
+
+  it("generates a fresh `desk-`-prefixed X-Hermes-Session-Id when no resumeSessionId is passed", async () => {
+    // Pin the new-chat session-id behaviour: instead of letting the
+    // gateway fall back to its `_derive_chat_session_id` fingerprint
+    // (sha256(system_prompt + first_user_message)[:16]), the desktop
+    // generates `desk-<ms>-<uuid>` per fresh chat and ships it via the
+    // header. The fingerprint collides across all chats whose first
+    // message is the same — see NousResearch/hermes-agent#7484.
+    await sendMessage(
+      "hello",
+      {
+        onChunk: () => {},
+        onDone: () => {},
+        onError: () => {},
+      },
+      "default",
+      undefined,
+    );
+
+    const chatRequest = capturedRequests.find((r) =>
+      r.url.includes("/v1/chat/completions"),
+    );
+    expect(chatRequest).toBeDefined();
+    const headers = chatRequest!.options.headers as Record<string, string>;
+
+    expect(headers).toHaveProperty("X-Hermes-Session-Id");
+    expect(headers["X-Hermes-Session-Id"]).toMatch(
+      /^desk-\d{13,}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    );
+  });
+
+  it("generates a different X-Hermes-Session-Id on each fresh send (no fingerprint collision)", async () => {
+    // The same first message twice MUST NOT produce the same session
+    // id — the whole point of the fix.
+    await sendMessage(
+      "Hello there",
+      { onChunk: () => {}, onDone: () => {}, onError: () => {} },
+      "default",
+      undefined,
+    );
+    await sendMessage(
+      "Hello there",
+      { onChunk: () => {}, onDone: () => {}, onError: () => {} },
+      "default",
+      undefined,
+    );
+
+    const chatRequests = capturedRequests.filter((r) =>
+      r.url.includes("/v1/chat/completions"),
+    );
+    expect(chatRequests.length).toBeGreaterThanOrEqual(2);
+    const ids = chatRequests.map(
+      (r) =>
+        (r.options.headers as Record<string, string>)["X-Hermes-Session-Id"],
+    );
+    expect(ids[0]).toBeTruthy();
+    expect(ids[1]).toBeTruthy();
+    expect(ids[0]).not.toBe(ids[1]);
+  });
+
+  // @lat: [[connections#Test specifications#Concurrent legacy Remote routes]]
+  it("keeps simultaneous legacy sends on their own Remote URL and credential", async () => {
+    const secondConnection: ConnectionConfig = {
+      mode: "remote",
+      remoteUrl: "https://second-api.example.com",
+      apiKey: "second-key",
+      remoteAuthMode: "token",
+      remoteChatTransport: "legacy",
+      sshChatTransport: "auto",
+      ssh: {
+        host: "",
+        port: 22,
+        username: "",
+        keyPath: "",
+        remotePort: 8642,
+        localPort: 18642,
+      },
+    };
+    const callbacks = { onChunk: vi.fn(), onDone: vi.fn(), onError: vi.fn() };
+
+    await Promise.all([
+      sendMessage("active", callbacks, "default"),
+      sendMessage(
+        "second",
+        callbacks,
+        "default",
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        secondConnection,
+      ),
+    ]);
+
+    const active = capturedRequests.find((request) =>
+      request.url.startsWith("http://test-api.example.com/v1/chat/completions"),
+    );
+    const second = capturedRequests.find((request) =>
+      request.url.startsWith(
+        "https://second-api.example.com/v1/chat/completions",
+      ),
+    );
+    expect(active?.options.headers).toMatchObject({
+      Authorization: "Bearer test-key",
+    });
+    expect(second?.options.headers).toMatchObject({
+      Authorization: "Bearer second-key",
+    });
   });
 });

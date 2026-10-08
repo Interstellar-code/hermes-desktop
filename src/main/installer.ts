@@ -3,27 +3,194 @@ import {
   existsSync,
   readFileSync,
   readdirSync,
+  statSync,
   writeFileSync,
   unlinkSync,
 } from "fs";
-import { join, delimiter } from "path";
+import { join, delimiter, resolve } from "path";
 import { homedir, tmpdir } from "os";
-import { randomBytes } from "crypto";
-import type { BrowserWindow } from "electron";
-import { getModelConfig, getConnectionConfig } from "./config";
-import { profileHome, stripAnsi } from "./utils";
+import { createHash, randomBytes } from "crypto";
+import { app, type BrowserWindow } from "electron";
+import {
+  getConnectionConfig,
+  getModelConfig,
+  hasOAuthCredentials,
+} from "./config";
+import { providerDoesNotNeedApiKey } from "./providers";
+import { getActiveProfileNameSync, profileHome, stripAnsi } from "./utils";
 import { setupAskpass, AskpassHandle } from "./askpass";
 import { precacheSudoCredentials } from "./sudoCreds";
 import { HIDDEN_SUBPROCESS_OPTIONS } from "./process-options";
+import {
+  INSTALLER_VERIFICATION_FAILED,
+  verifiedInstallerCommand,
+} from "./installer-download";
 
 const IS_WINDOWS = process.platform === "win32";
 
+const HERMES_DESKTOP_USER_DATA_DIR =
+  process.env.HERMES_DESKTOP_USER_DATA_DIR?.trim();
+if (HERMES_DESKTOP_USER_DATA_DIR) {
+  try {
+    app.setPath("userData", HERMES_DESKTOP_USER_DATA_DIR);
+  } catch {
+    /* best effort: Electron may reject late path changes in tests */
+  }
+}
+
+// Resolve the Hermes data directory. Precedence:
+//   1. HERMES_HOME env var if set (install.ps1 sets it User-scope on
+//      Windows; users may also override manually for WSL/custom setups).
+//   2. On Windows, probe both candidates and pick whichever already has
+//      data. install.ps1's default is %LOCALAPPDATA%\hermes, but some
+//      setups put data at ~/.hermes (e.g. a junction into WSL, or a
+//      custom -HermesHome flag on install). Without probing we'd silently
+//      switch directories on users who had it working before.
+//   3. Fresh install fallback: %LOCALAPPDATA%\hermes on Windows (matches
+//      install.ps1's default), ~/.hermes elsewhere.
+//
+// Motivating bug: Electron launched from the Start Menu doesn't always
+// inherit shell-set env vars, so relying on HERMES_HOME alone left
+// Windows users staring at an empty ~/.hermes while their real data
+// sat in %LOCALAPPDATA%\hermes.
+function looksLikeHermesHome(dir: string): boolean {
+  if (!existsSync(dir)) return false;
+  return (
+    existsSync(join(dir, "hermes-agent")) ||
+    existsSync(join(dir, "gateway.pid")) ||
+    existsSync(join(dir, "config.yaml")) ||
+    existsSync(join(dir, "active_profile")) ||
+    existsSync(join(dir, ".env"))
+  );
+}
+
+function defaultHermesHome(): string {
+  const homeDot = join(homedir(), ".hermes");
+  if (!IS_WINDOWS) return homeDot;
+
+  const localApp = process.env.LOCALAPPDATA
+    ? join(process.env.LOCALAPPDATA, "hermes")
+    : null;
+
+  // Prefer whichever location already has hermes data.
+  if (localApp && looksLikeHermesHome(localApp)) return localApp;
+  if (looksLikeHermesHome(homeDot)) return homeDot;
+
+  // Neither populated yet — fall back to install.ps1's default so a
+  // fresh install lines up with where the installer will write.
+  return localApp ?? homeDot;
+}
+
+// A Hermes home the user explicitly pointed the app at via the "use an
+// existing installation" flow (issue #272). Persisted in the desktop's own
+// userData dir — outside any Hermes home — so it can be read here, before
+// HERMES_HOME is resolved. When the selection replaces an inherited
+// HERMES_HOME, remember a one-way fingerprint of that exact value so the same
+// launch environment cannot mask the user's choice again after restart. A
+// different later HERMES_HOME remains authoritative.
+function hermesHomeOverrideFile(): string {
+  // `app` is undefined outside an Electron runtime (e.g. unit tests) —
+  // optional-chain it so module load degrades to "no override" instead of
+  // throwing.
+  const userData = app?.getPath?.("userData");
+  return userData ? join(userData, "hermes-home.json") : "";
+}
+
+const inheritedHermesHome = process.env.HERMES_HOME?.trim() || "";
+
+interface StoredHermesHomeOverride {
+  hermesHome: string;
+  shadowedHermesHomeHash?: string;
+}
+
+function normalizedHomePath(home: string): string {
+  const normalized = resolve(home);
+  return IS_WINDOWS ? normalized.toLowerCase() : normalized;
+}
+
+function sameHomePath(left: string, right: string): boolean {
+  return normalizedHomePath(left) === normalizedHomePath(right);
+}
+
+function homePathFingerprint(home: string): string {
+  return createHash("sha256").update(normalizedHomePath(home)).digest("hex");
+}
+
+function readHermesHomeOverride(): StoredHermesHomeOverride | null {
+  try {
+    const file = hermesHomeOverrideFile();
+    if (!file || !existsSync(file)) return null;
+    const parsed = JSON.parse(readFileSync(file, "utf-8")) as {
+      hermesHome?: unknown;
+      shadowedHermesHomeHash?: unknown;
+    };
+    const hermesHome =
+      typeof parsed.hermesHome === "string" ? parsed.hermesHome.trim() : "";
+    // Ignore an override whose desktop-compatible installation is stale or incomplete.
+    if (!hermesHome || !validateHermesHome(hermesHome)) return null;
+    const shadowedHermesHomeHash =
+      typeof parsed.shadowedHermesHomeHash === "string"
+        ? parsed.shadowedHermesHomeHash.trim()
+        : "";
+    return {
+      hermesHome,
+      ...(/^[a-f0-9]{64}$/.test(shadowedHermesHomeHash)
+        ? { shadowedHermesHomeHash }
+        : {}),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Persist (when `home` is set) or clear (when "") the Hermes home override. */
+export function setHermesHomeOverride(home: string): void {
+  try {
+    const file = hermesHomeOverrideFile();
+    if (!file) return;
+    const hermesHome = home.trim();
+    if (!hermesHome) {
+      if (existsSync(file)) unlinkSync(file);
+      return;
+    }
+    const stored: StoredHermesHomeOverride = { hermesHome };
+    if (inheritedHermesHome && !sameHomePath(inheritedHermesHome, hermesHome)) {
+      stored.shadowedHermesHomeHash = homePathFingerprint(inheritedHermesHome);
+    }
+    writeFileSync(file, JSON.stringify(stored, null, 2), "utf-8");
+  } catch {
+    /* best effort — a failed write just means no override next launch */
+  }
+}
+
+const storedHermesHome = readHermesHomeOverride();
+const storedHomeShadowsInherited = Boolean(
+  inheritedHermesHome &&
+  storedHermesHome?.shadowedHermesHomeHash &&
+  homePathFingerprint(inheritedHermesHome) ===
+    storedHermesHome.shadowedHermesHomeHash,
+);
+
 export const HERMES_HOME =
-  process.env.HERMES_HOME?.trim() || join(homedir(), ".hermes");
+  (storedHomeShadowsInherited ? storedHermesHome?.hermesHome : "") ||
+  inheritedHermesHome ||
+  storedHermesHome?.hermesHome ||
+  defaultHermesHome();
 export const HERMES_REPO = join(HERMES_HOME, "hermes-agent");
 export const HERMES_VENV = join(HERMES_REPO, "venv");
+// On Windows, use `pythonw.exe` (the GUI-subsystem interpreter that ships in
+// every venv) instead of `python.exe` so that subprocess spawns don't flash
+// a blank console window before `windowsHide: true` / CREATE_NO_WINDOW takes
+// effect. Issue #342: on every chat send the `sendMessageViaCli` fallback
+// path spawned `python.exe`, and the console appeared for a few hundred ms
+// despite `windowsHide: true` — a well-known race between console allocation
+// and CREATE_NO_WINDOW on console-subsystem child binaries. `pythonw.exe`
+// is linked as Windows subsystem, so the OS can never allocate a console
+// for it regardless of creation flags. It's a bit-identical interpreter
+// otherwise — same modules, same stdout/stderr behaviour over piped stdio
+// (which is what every call site here uses).
 export const HERMES_PYTHON = IS_WINDOWS
-  ? join(HERMES_VENV, "Scripts", "python.exe")
+  ? join(HERMES_VENV, "Scripts", "pythonw.exe")
   : join(HERMES_VENV, "bin", "python");
 export const HERMES_SCRIPT = IS_WINDOWS
   ? join(HERMES_VENV, "Scripts", "hermes.exe")
@@ -32,6 +199,19 @@ export const HERMES_ENV_FILE = join(HERMES_HOME, ".env");
 export const HERMES_CONFIG_FILE = join(HERMES_HOME, "config.yaml");
 export const HERMES_AUTH_FILE = join(HERMES_HOME, "auth.json");
 
+/** The Python + hermes-script paths for a Hermes install rooted at `home`,
+ *  in the layout the desktop's own installer produces. */
+function installBinariesFor(home: string): { python: string; script: string } {
+  const repo = join(home, "hermes-agent");
+  const venv = join(repo, "venv");
+  return IS_WINDOWS
+    ? {
+        python: join(venv, "Scripts", "python.exe"),
+        script: join(venv, "Scripts", "hermes.exe"),
+      }
+    : { python: join(venv, "bin", "python"), script: join(repo, "hermes") };
+}
+
 export function hermesCliArgs(args: string[] = []): string[] {
   if (process.platform === "win32") {
     return ["-m", "hermes_cli.main", ...args];
@@ -39,11 +219,20 @@ export function hermesCliArgs(args: string[] = []): string[] {
   return [HERMES_SCRIPT, ...args];
 }
 
+function canInvokeHermesCli(): boolean {
+  if (!existsSync(HERMES_PYTHON)) return false;
+  if (IS_WINDOWS) {
+    return existsSync(join(HERMES_REPO, "hermes_cli", "main.py"));
+  }
+  return existsSync(HERMES_SCRIPT);
+}
+
 export interface InstallStatus {
   installed: boolean;
   configured: boolean;
   hasApiKey: boolean;
   verified: boolean;
+  activeProfile?: string;
 }
 
 export interface InstallProgress {
@@ -134,24 +323,200 @@ function resolveNvmBin(home: string): string[] {
   return [];
 }
 
-export function hasHermesAuthCredential(provider: string): boolean {
-  if (!provider || !existsSync(HERMES_AUTH_FILE)) return false;
-  try {
-    const auth = JSON.parse(readFileSync(HERMES_AUTH_FILE, "utf-8")) as {
-      active_provider?: string;
-      credential_pool?: Record<string, unknown[]>;
-      providers?: Record<string, unknown>;
-    };
-    const pool = auth.credential_pool?.[provider];
-    if (Array.isArray(pool) && pool.length > 0) return true;
-    if (auth.active_provider === provider) return true;
-    return Boolean(auth.providers?.[provider]);
-  } catch {
-    return false;
+function activeEnvFile(profile: string): string {
+  return profile === "default"
+    ? HERMES_ENV_FILE
+    : join(HERMES_HOME, "profiles", profile, ".env");
+}
+
+function activeAuthFile(profile: string): string {
+  return profile === "default"
+    ? HERMES_AUTH_FILE
+    : join(HERMES_HOME, "profiles", profile, "auth.json");
+}
+
+// Canonical env-var name per known model provider. Keys here are values
+// the user might see in `model.provider` in config.yaml; values are the
+// env vars the gateway expects to read from .env. Names that don't
+// appear here either don't need a key (local providers, nous) or have
+// OAuth-style credentials (covered separately via hasHermesAuthCredential).
+//
+// Used by the install-gate check below. Previously that check
+// hard-coded only OPENROUTER_API_KEY / ANTHROPIC_API_KEY / OPENAI_API_KEY,
+// so any user configured for DeepSeek, Groq, Mistral, etc. saw the
+// "set AI provider" first-run screen even with a valid key in .env.
+// See issue #236.
+const PROVIDER_ENV_KEYS: Record<string, string> = {
+  openrouter: "OPENROUTER_API_KEY",
+  anthropic: "ANTHROPIC_API_KEY",
+  openai: "OPENAI_API_KEY",
+  "ollama-cloud": "OLLAMA_API_KEY",
+  aimlapi: "AIMLAPI_API_KEY",
+  google: "GOOGLE_API_KEY",
+  xai: "XAI_API_KEY",
+  groq: "GROQ_API_KEY",
+  deepseek: "DEEPSEEK_API_KEY",
+  together: "TOGETHER_API_KEY",
+  fireworks: "FIREWORKS_API_KEY",
+  cerebras: "CEREBRAS_API_KEY",
+  mistral: "MISTRAL_API_KEY",
+  perplexity: "PERPLEXITY_API_KEY",
+  huggingface: "HF_TOKEN",
+  hf: "HF_TOKEN",
+  // DashScope: `alibaba` is the canonical agent slug; the rest are the
+  // agent's own aliases for it (models.py PROVIDER_ALIASES) — including
+  // `qwen`, which every pre-#825 desktop config stored. Only `qwen-oauth`
+  // is the Qwen Portal OAuth provider.
+  alibaba: "DASHSCOPE_API_KEY",
+  dashscope: "DASHSCOPE_API_KEY",
+  qwen: "DASHSCOPE_API_KEY",
+  aliyun: "DASHSCOPE_API_KEY",
+  "alibaba-cloud": "DASHSCOPE_API_KEY",
+  "qwen-oauth": "QWEN_API_KEY",
+  minimax: "MINIMAX_API_KEY",
+  glm: "GLM_API_KEY",
+  kimi: "KIMI_API_KEY",
+  nvidia: "NVIDIA_API_KEY",
+  // Nous Portal supports BOTH OAuth (`nous` variant) AND API key
+  // (`nous-api` variant). Register the env var name under both ids so
+  // the install-gate + pre-send validation + config-health audit can
+  // detect a missing key — whichever id the user's profile happens to
+  // be configured under. The OAuth case is handled separately by
+  // checking auth.json via hasOAuthCredentials() (config.ts).
+  nous: "NOUS_API_KEY",
+  "nous-api": "NOUS_API_KEY",
+  xiaomi: "XIAOMI_API_KEY",
+};
+
+// When provider is "custom" or "auto", the desktop's setup flow falls
+// back to recognizing the endpoint by base URL. Same patterns hermes.ts
+// uses for runtime header injection.
+const URL_TO_ENV_KEY: Array<[RegExp, string]> = [
+  [/openrouter\.ai/i, "OPENROUTER_API_KEY"],
+  [/anthropic\.com/i, "ANTHROPIC_API_KEY"],
+  [/openai\.com/i, "OPENAI_API_KEY"],
+  [/(^|\/\/|\.)ollama\.com(?=\/|:|$)/i, "OLLAMA_API_KEY"],
+  [/api\.aimlapi\.com/i, "AIMLAPI_API_KEY"],
+  [/huggingface\.co/i, "HF_TOKEN"],
+  [/api\.groq\.com/i, "GROQ_API_KEY"],
+  [/api\.deepseek\.com/i, "DEEPSEEK_API_KEY"],
+  [/api\.together\.xyz/i, "TOGETHER_API_KEY"],
+  [/api\.fireworks\.ai/i, "FIREWORKS_API_KEY"],
+  [/api\.cerebras\.ai/i, "CEREBRAS_API_KEY"],
+  [/atlascloud\.ai/i, "ATLASCLOUD_API_KEY"],
+  [/api\.novita\.ai/i, "NOVITA_API_KEY"],
+  [/api\.mistral\.ai/i, "MISTRAL_API_KEY"],
+  [/api\.perplexity\.ai/i, "PERPLEXITY_API_KEY"],
+  [/api\.xiaomimimo\.com/i, "XIAOMI_API_KEY"],
+  [/dashscope(-intl)?\.aliyuncs\.com/i, "DASHSCOPE_API_KEY"],
+];
+
+/**
+ * Resolve the env var name the gateway expects for a given model config.
+ * Returns null when the provider/URL combination has no known canonical
+ * env var (the caller falls back to a permissive `*_API_KEY|*_TOKEN`
+ * scan, matching the spirit of the prior hard-coded check).
+ *
+ * Exported for unit testing.
+ */
+export function expectedEnvKeyForModel(
+  provider: string,
+  baseUrl: string,
+): string | null {
+  const direct = PROVIDER_ENV_KEYS[provider.trim().toLowerCase()];
+  if (direct) return direct;
+  for (const [pattern, envKey] of URL_TO_ENV_KEY) {
+    if (pattern.test(baseUrl)) return envKey;
   }
+  return null;
+}
+
+function envHasUsableValue(
+  content: string,
+  expectedKey: string | null,
+): boolean {
+  for (const line of content.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const m = trimmed.match(/^([A-Z][A-Z0-9_]*)=(.*)$/);
+    if (!m) continue;
+    const key = m[1];
+    let value = m[2].trim();
+    // Strip surrounding quotes so `KEY=""` or `KEY="abc"` parse the
+    // same way as `KEY=abc`.
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    if (!value) continue;
+
+    if (expectedKey) {
+      if (key === expectedKey) return true;
+    } else {
+      // No known mapping for this provider/URL — accept any value that
+      // looks like a credential. Avoids regressing users on providers
+      // we haven't catalogued explicitly, while still rejecting
+      // unrelated env vars (TELEGRAM_BOT_TOKEN etc. shouldn't satisfy
+      // the model install gate, but a custom `*_API_KEY` should).
+      if (/_API_KEY$/.test(key)) return true;
+    }
+  }
+  return false;
+}
+
+// ── Pre-install inspection (issue #272) ──────────────────────────────────────
+
+export type InstallTargetState = "fresh" | "update" | "replace";
+
+export interface InstallTargetInfo {
+  /** Where the desktop will install — shown to the user before they commit. */
+  hermesHome: string;
+  repoPath: string;
+  /** What the installer will do to `repoPath`:
+   *  - `fresh`   — nothing is there; a clean install.
+   *  - `update`  — a valid git checkout; install.sh/ps1 updates it in place.
+   *  - `replace` — a directory is there but not a valid checkout, so the
+   *                install script deletes and re-clones it. */
+  state: InstallTargetState;
+}
+
+/** Classify what the installer will do to the target directory. Pure — the
+ *  filesystem probing lives in `inspectInstallTarget`. */
+export function classifyInstallTarget(
+  repoExists: boolean,
+  repoIsGitRepo: boolean,
+): InstallTargetState {
+  if (!repoExists) return "fresh";
+  return repoIsGitRepo ? "update" : "replace";
+}
+
+/** Inspect the install target so the renderer can warn before installing. */
+export function inspectInstallTarget(): InstallTargetInfo {
+  const repoExists = existsSync(HERMES_REPO);
+  const repoIsGitRepo = repoExists && existsSync(join(HERMES_REPO, ".git"));
+  return {
+    hermesHome: HERMES_HOME,
+    repoPath: HERMES_REPO,
+    state: classifyInstallTarget(repoExists, repoIsGitRepo),
+  };
+}
+
+/** True when `dir` is a Hermes home the desktop can drive as-is — it must
+ *  contain a `hermes-agent` install with the venv binaries in the layout the
+ *  desktop expects. A hand-rolled install with a different layout fails here
+ *  rather than being silently adopted into a broken state (issue #272). */
+export function validateHermesHome(dir: string): boolean {
+  const home = dir?.trim();
+  if (!home || !existsSync(home)) return false;
+  const { python, script } = installBinariesFor(home);
+  return existsSync(python) && existsSync(script);
 }
 
 export function checkInstallStatus(): InstallStatus {
+  const activeProfile = getActiveProfileNameSync();
+
   // Remote mode: skip local checks entirely
   const conn = getConnectionConfig();
   if (conn.mode === "remote" && conn.remoteUrl) {
@@ -160,6 +525,7 @@ export function checkInstallStatus(): InstallStatus {
       configured: true,
       hasApiKey: true,
       verified: true,
+      activeProfile,
     };
   }
 
@@ -168,18 +534,21 @@ export function checkInstallStatus(): InstallStatus {
   // latency, so it now lives in `verifyInstall()` and is invoked lazily
   // by the renderer after the main UI is mounted.
   const installed = existsSync(HERMES_PYTHON) && existsSync(HERMES_SCRIPT);
-  const configured = existsSync(HERMES_ENV_FILE);
+  const envFile = activeEnvFile(activeProfile);
+  const authFile = activeAuthFile(activeProfile);
+  const configured = existsSync(envFile) || existsSync(authFile);
   let hasApiKey = false;
   const verified = installed;
 
   // Local/custom providers don't need an API key. OAuth-backed providers
-  // can be configured through Hermes auth.json instead of .env.
+  // (including credential-pool entries) can be configured through Hermes
+  // auth.json instead of .env, so check those before falling back to keys.
+  let mc: { provider: string; model: string; baseUrl: string } | null = null;
   try {
-    const mc = getModelConfig();
-    const localProviders = ["custom", "lmstudio", "ollama", "vllm", "llamacpp"];
+    mc = getModelConfig(activeProfile);
     if (
-      localProviders.includes(mc.provider) ||
-      hasHermesAuthCredential(mc.provider)
+      providerDoesNotNeedApiKey(mc.provider) ||
+      hasOAuthCredentials(mc.provider, activeProfile)
     ) {
       hasApiKey = true;
     }
@@ -187,30 +556,19 @@ export function checkInstallStatus(): InstallStatus {
     /* ignore */
   }
 
-  if (!hasApiKey && configured) {
+  if (!hasApiKey && configured && existsSync(envFile)) {
     try {
-      const content = readFileSync(HERMES_ENV_FILE, "utf-8");
-      for (const line of content.split("\n")) {
-        const trimmed = line.trim();
-        if (trimmed.startsWith("#")) continue;
-        const match = trimmed.match(
-          /^(OPENROUTER_API_KEY|ANTHROPIC_API_KEY|OPENAI_API_KEY)=(.+)$/,
-        );
-        if (
-          match &&
-          match[2].trim() &&
-          !['""', "''", ""].includes(match[2].trim())
-        ) {
-          hasApiKey = true;
-          break;
-        }
-      }
+      const content = readFileSync(envFile, "utf-8");
+      const expectedKey = mc
+        ? expectedEnvKeyForModel(mc.provider, mc.baseUrl)
+        : null;
+      hasApiKey = envHasUsableValue(content, expectedKey);
     } catch {
       /* ignore read errors */
     }
   }
 
-  return { installed, configured, hasApiKey, verified };
+  return { installed, configured, hasApiKey, verified, activeProfile };
 }
 
 // Lazy background verification: actually invoke Python to confirm the
@@ -219,7 +577,7 @@ let _verifyCache: { ok: boolean; ts: number } | null = null;
 const VERIFY_TTL_MS = 5 * 60 * 1000;
 
 export async function verifyInstall(): Promise<boolean> {
-  if (!existsSync(HERMES_PYTHON) || !existsSync(HERMES_SCRIPT)) return false;
+  if (!canInvokeHermesCli()) return false;
   if (_verifyCache && Date.now() - _verifyCache.ts < VERIFY_TTL_MS) {
     return _verifyCache.ok;
   }
@@ -253,12 +611,21 @@ let _versionFetching = false;
 
 export async function getHermesVersion(): Promise<string | null> {
   if (_cachedVersion !== null) return _cachedVersion;
-  if (!existsSync(HERMES_PYTHON) || !existsSync(HERMES_SCRIPT)) return null;
+  if (!canInvokeHermesCli()) return null;
   if (_versionFetching) {
-    // Wait for in-flight fetch
+    // Wait for the in-flight fetch but cap the wait. The execFile below
+    // has a 15s timeout and its callback unconditionally clears
+    // `_versionFetching`, so under normal failure paths the poll
+    // unblocks on its own. Pathological cases (callback never invoked,
+    // worker killed mid-callback, async exception in handler) would
+    // otherwise leak a 100 ms interval per caller forever. Cap at 20s
+    // — comfortably above the execFile timeout — and resolve with
+    // whatever `_cachedVersion` happens to be (typically `null`),
+    // which matches the same return shape callers already handle.
     return new Promise((resolve) => {
+      const startedAt = Date.now();
       const check = setInterval(() => {
-        if (!_versionFetching) {
+        if (!_versionFetching || Date.now() - startedAt > 20_000) {
           clearInterval(check);
           resolve(_cachedVersion);
         }
@@ -299,7 +666,7 @@ export function clearVersionCache(): void {
 }
 
 export function runHermesDoctor(): string {
-  if (!existsSync(HERMES_PYTHON) || !existsSync(HERMES_SCRIPT)) {
+  if (!canInvokeHermesCli()) {
     return "Hermes is not installed.";
   }
   try {
@@ -324,10 +691,35 @@ export function runHermesDoctor(): string {
 
 const OPENCLAW_DIR_NAMES = [".openclaw", ".clawdbot", ".moldbot"];
 
-export function checkOpenClawExists(): { found: boolean; path: string | null } {
+// hermes-desktop itself creates ~/.openclaw/claw3d/ as a stub when preparing
+// Claw3D settings (see claw3d.ts:writeClaw3dSettings), so a bare `existsSync`
+// check would surface that empty stub as a "real" OpenClaw install and
+// prompt the user to migrate from themselves. Require at least one regular
+// file anywhere in the tree so empty scaffolding doesn't trigger the banner.
+function dirContainsAnyFile(dir: string, maxDepth = 3): boolean {
+  try {
+    const entries = readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isFile()) return true;
+      if (entry.isDirectory() && maxDepth > 0) {
+        if (dirContainsAnyFile(join(dir, entry.name), maxDepth - 1)) {
+          return true;
+        }
+      }
+    }
+  } catch {
+    // unreadable → treat as empty
+  }
+  return false;
+}
+
+export function checkOpenClawExists(home: string = homedir()): {
+  found: boolean;
+  path: string | null;
+} {
   for (const name of OPENCLAW_DIR_NAMES) {
-    const dir = join(homedir(), name);
-    if (existsSync(dir)) {
+    const dir = join(home, name);
+    if (existsSync(dir) && dirContainsAnyFile(dir)) {
       return { found: true, path: dir };
     }
   }
@@ -593,10 +985,11 @@ export async function runInstall(
       // then run the official install script. Electron apps launched from Finder
       // don't inherit the terminal environment.
       const shellProfile = getShellProfile(home);
+
       const installCmd = [
         shellProfile ? `source "${shellProfile}" 2>/dev/null;` : "",
-        "curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash -s -- --skip-setup",
-      ].join(" ");
+        verifiedInstallerCommand(),
+      ].join("\n");
 
       const basePath = getEnhancedPath();
       const proc = spawn("bash", ["-c", installCmd], {
@@ -621,6 +1014,14 @@ export async function runInstall(
       });
 
       proc.on("close", (code) => {
+        if (code === INSTALLER_VERIFICATION_FAILED) {
+          reject(
+            new Error(
+              "Installer download or checksum verification failed. Installation was not run.",
+            ),
+          );
+          return;
+        }
         if (code === 0) {
           emit("\nInstallation complete!\n");
           resolve();
@@ -695,6 +1096,8 @@ async function runInstallWindows(emit: (t: string) => void): Promise<void> {
   // with our parameters. This sidesteps the `iex`-can't-pass-args limitation.
   const wrapperScript = [
     "$ErrorActionPreference = 'Stop'",
+    `$hermesHome = ${psQuote(hermesHome)}`,
+    `$installDir = ${psQuote(installDir)}`,
     // Force TLS 1.2 for older Windows PowerShell 5.1 hosts that still default
     // to TLS 1.0 — github raw refuses TLS < 1.2.
     "try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch {}",
@@ -708,8 +1111,24 @@ async function runInstallWindows(emit: (t: string) => void): Promise<void> {
     "$text = if ($resp.Content -is [byte[]]) { [System.Text.Encoding]::UTF8.GetString($resp.Content) } else { [string]$resp.Content }",
     "if ($text.Length -gt 0 -and $text[0] -eq [char]0xFEFF) { $text = $text.Substring(1) }",
     "[System.IO.File]::WriteAllText($installer, $text, (New-Object System.Text.UTF8Encoding $true))",
-    `& $installer -SkipSetup -HermesHome ${psQuote(hermesHome)} -InstallDir ${psQuote(installDir)}`,
-    "$exit = $LASTEXITCODE",
+    "$exit = 1",
+    "try {",
+    "  & $installer -SkipSetup -NonInteractive -HermesHome $hermesHome -InstallDir $installDir",
+    "  $exit = $LASTEXITCODE",
+    "} finally {",
+    "  if ($env:HERMES_DESKTOP_SANDBOX -eq '1') {",
+    "    $sandboxVenv = Join-Path $installDir 'venv\\Scripts'",
+    "    $userHermesHome = [Environment]::GetEnvironmentVariable('HERMES_HOME', 'User')",
+    "    if ($userHermesHome -and ($userHermesHome.TrimEnd('\\') -ieq $hermesHome.TrimEnd('\\'))) {",
+    "      [Environment]::SetEnvironmentVariable('HERMES_HOME', $null, 'User')",
+    "    }",
+    "    $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')",
+    "    if ($userPath) {",
+    "      $parts = $userPath -split ';' | Where-Object { $_ -and ($_.TrimEnd('\\') -ine $sandboxVenv.TrimEnd('\\')) }",
+    "      [Environment]::SetEnvironmentVariable('Path', ($parts -join ';'), 'User')",
+    "    }",
+    "  }",
+    "}",
     "Remove-Item -Force -ErrorAction SilentlyContinue $installer",
     "exit $exit",
     "",
@@ -858,12 +1277,17 @@ export async function runHermesImport(
   archivePath: string,
   profile?: string,
 ): Promise<{ success: boolean; error?: string }> {
+  const archive = validateImportArchivePath(archivePath);
+  if (!archive.success) {
+    return { success: false, error: archive.error };
+  }
+
   if (!existsSync(HERMES_PYTHON) || !existsSync(HERMES_SCRIPT)) {
     return { success: false, error: "Hermes is not installed." };
   }
   const args = hermesCliArgs();
   if (profile && profile !== "default") args.push("-p", profile);
-  args.push("import", archivePath);
+  args.push("import", archive.path);
 
   return new Promise((resolve) => {
     execFile(
@@ -893,6 +1317,29 @@ export async function runHermesImport(
       },
     );
   });
+}
+
+export function validateImportArchivePath(
+  archivePath: unknown,
+): { success: true; path: string } | { success: false; error: string } {
+  if (typeof archivePath !== "string" || archivePath.trim() === "") {
+    return { success: false, error: "Import archive path is required." };
+  }
+
+  const path = resolve(archivePath);
+  if (!existsSync(path)) {
+    return { success: false, error: "Import archive does not exist." };
+  }
+
+  try {
+    if (!statSync(path).isFile()) {
+      return { success: false, error: "Import archive must be a file." };
+    }
+  } catch {
+    return { success: false, error: "Import archive is not readable." };
+  }
+
+  return { success: true, path };
 }
 
 // ────────────────────────────────────────────────────

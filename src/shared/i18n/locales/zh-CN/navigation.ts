@@ -1,6 +1,12 @@
 export default {
   chat: "聊天",
+  newChat: "新建聊天",
   sessions: "会话",
+  projects: "项目",
+  chats: "聊天",
+  noChats: "暂无聊天",
+  discover: "发现",
+  pinned: "已固定",
   agents: "档案",
   office: "工作区",
   models: "模型",
@@ -13,4 +19,6 @@ export default {
   kanban: "看板",
   gateway: "网关",
   settings: "设置",
+  collapseSidebar: "折叠侧边栏",
+  expandSidebar: "展开侧边栏",
 } as const;

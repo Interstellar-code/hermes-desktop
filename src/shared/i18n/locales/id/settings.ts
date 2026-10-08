@@ -3,7 +3,37 @@ export default {
   sections: {
     hermesAgent: "Hermes Agent",
     appearance: "Tampilan",
+    privacy: "Privasi",
     credentialPool: "Kumpulan Kredensial",
+  },
+  nav: {
+    groups: {
+      general: "Umum",
+      hermes: "Hermes One",
+    },
+    appearance: "Tampilan",
+    language: "Bahasa",
+    privacy: "Privasi",
+    connection: "Koneksi",
+    network: "Jaringan",
+    data: "Data",
+    about: "Tentang & Pembaruan",
+    community: "Komunitas",
+    logs: "Log & Diagnostik",
+  },
+  analytics: {
+    label: "Kirim analitik penggunaan anonim",
+    hint: "Membantu meningkatkan Hermes dengan mengirim data penggunaan anonim dan teragregasi ke layanan analitik proyek. Anda dapat menonaktifkannya kapan saja.",
+    disclosure: {
+      uuid: "Pengenal acak per-instalasi yang disimpan hanya di perangkat ini (tanpa nama, email, atau info akun).",
+      platform: "Sistem operasi, versi Electron, dan versi Node.js Anda.",
+      navigation:
+        "Layar mana yang Anda kunjungi di dalam aplikasi (mis. Chat, Sesi, Pengaturan). Tidak ada konten chat, prompt, respons model, atau isi file yang dikumpulkan.",
+      endpoint:
+        "Data dikirim ke layanan analitik Hermes (analytics.hermesone.org). Rekaman sesi dan tangkapan pageview otomatis dinonaktifkan.",
+      notCollected:
+        "Tidak pernah dikumpulkan: pesan chat, jalur file, kunci API, konfigurasi model, kredensial akun.",
+    },
   },
   theme: {
     label: "Tema",
@@ -42,6 +72,13 @@ export default {
   customProviderHint:
     "Gunakan API apa pun yang kompatibel dengan OpenAI (LM Studio, Ollama, vLLM, dll.)",
   modelHint: "Nama model default (kosongkan untuk memakai default provider)",
+  refreshModels: "Muat ulang daftar model",
+  discoveringModels: "Memuat model yang tersedia…",
+  discoveredCount: "{{count}} model tersedia — ketik untuk memfilter",
+  discoveryNoKey:
+    "Atur API key provider ini di .env untuk memuat daftar model yang tersedia",
+  discoveryError:
+    "Tidak dapat menjangkau daftar model provider — Anda masih bisa mengetik nama model",
   customBaseUrlHint: "Endpoint API kompatibel OpenAI",
   poolHint:
     "Tambahkan beberapa API Key untuk provider yang sama agar Hermes dapat melakukan rotasi otomatis dan load balancing.",

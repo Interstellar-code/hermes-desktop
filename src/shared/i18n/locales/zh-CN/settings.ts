@@ -3,7 +3,37 @@ export default {
   sections: {
     hermesAgent: "Hermes Agent",
     appearance: "外观",
+    privacy: "隐私",
     credentialPool: "凭据池",
+  },
+  nav: {
+    groups: {
+      general: "通用",
+      hermes: "Hermes One",
+    },
+    appearance: "外观",
+    language: "语言",
+    privacy: "隐私",
+    connection: "连接",
+    network: "网络",
+    data: "数据",
+    about: "关于与更新",
+    community: "社区",
+    logs: "日志与诊断",
+  },
+  analytics: {
+    label: "发送匿名使用情况分析",
+    hint: "通过向项目的分析服务发送匿名、聚合的使用数据来帮助改进 Hermes。您可以随时关闭。",
+    disclosure: {
+      uuid: "仅存储在本设备上的每次安装的随机标识符（不包含姓名、电子邮件或账户信息）。",
+      platform: "您的操作系统、Electron 版本和 Node.js 版本。",
+      navigation:
+        "您在应用内打开了哪些界面（例如聊天、会话、设置）。不会收集任何聊天内容、提示词、模型响应或文件内容。",
+      endpoint:
+        "数据将发送至 Hermes 分析服务（analytics.hermesone.org）。已禁用会话录制和页面浏览自动捕获。",
+      notCollected:
+        "永不收集：聊天消息、文件路径、API 密钥、模型配置、账户凭据。",
+    },
   },
   theme: {
     label: "主题",
@@ -38,6 +68,11 @@ export default {
   providerHint: "选择推理提供商,或根据 API Key 自动识别",
   customProviderHint: "使用任何兼容 OpenAI 的接口(LM Studio、Ollama、vLLM 等)",
   modelHint: "默认模型名(留空则使用提供商默认值)",
+  refreshModels: "刷新模型列表",
+  discoveringModels: "正在加载可用模型…",
+  discoveredCount: "{{count}} 个可用模型 — 输入以筛选",
+  discoveryNoKey: "请在 .env 中设置此提供商的 API Key 以加载可用模型列表",
+  discoveryError: "无法获取提供商的模型列表 — 你仍可手动输入模型名",
   customBaseUrlHint: "兼容 OpenAI 的 API 地址",
   poolHint:
     "为同一提供商添加多个 API Key,以便自动轮换和负载均衡。Hermes 会在它们之间轮流使用。",

@@ -59,17 +59,6 @@ export function useLocalCommands({
           onClear();
           return true;
 
-        case "/model": {
-          const mc = await window.hermesAPI.getModelConfig(profile);
-          const display = mc.model || "Not set";
-          const prov = mc.provider || "auto";
-          addAgentMessage(
-            `**Current model:** \`${display}\`\n**Provider:** ${prov}` +
-              (mc.baseUrl ? `\n**Base URL:** ${mc.baseUrl}` : ""),
-          );
-          return true;
-        }
-
         case "/memory": {
           const mem = await window.hermesAPI.readMemory(profile);
           const lines: string[] = ["**Agent Memory**\n"];
@@ -130,7 +119,7 @@ export function useLocalCommands({
             window.hermesAPI.getAppVersion(),
           ]);
           addAgentMessage(
-            `**Hermes Agent:** ${hermesVer || "unknown"}\n**Desktop App:** v${appVer}`,
+            `**Hermes Agent:** ${hermesVer || "unknown"}\n**Hermes One:** v${appVer}`,
           );
           return true;
         }
@@ -143,11 +132,6 @@ export function useLocalCommands({
           const isOn = current === "fast" || current === "priority";
           const next = !isOn;
           await setFastMode(next);
-          addAgentMessage(
-            next
-              ? "**Fast Mode: ON** — Priority processing enabled for lower latency."
-              : "**Fast Mode: OFF** — Standard processing restored.",
-          );
           return true;
         }
 

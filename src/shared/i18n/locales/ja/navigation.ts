@@ -1,6 +1,12 @@
 export default {
   chat: "チャット",
+  newChat: "新しいチャット",
   sessions: "セッション",
+  projects: "プロジェクト",
+  chats: "チャット",
+  noChats: "チャットなし",
+  discover: "見つける",
+  pinned: "ピン留め",
   agents: "プロファイル",
   office: "オフィス",
   models: "モデル",
@@ -13,4 +19,6 @@ export default {
   kanban: "カンバン",
   gateway: "ゲートウェイ",
   settings: "設定",
+  collapseSidebar: "サイドバーを折りたたむ",
+  expandSidebar: "サイドバーを展開",
 } as const;

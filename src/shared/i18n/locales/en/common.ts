@@ -1,5 +1,5 @@
 export default {
-  appName: "Hermes Agent",
+  appName: "Hermes One",
   continue: "Continue",
   cancel: "Cancel",
   retry: "Retry",
@@ -7,6 +7,11 @@ export default {
   loadingShort: "Loading",
   saved: "Saved",
   save: "Save",
+  done: "Done",
+  edit: "Edit",
+  addKey: "Add key",
+  activeModel: "Active Model",
+  change: "Change",
   search: "Search",
   searchPlaceholder: "Search...",
   show: "Show",
@@ -16,6 +21,7 @@ export default {
   add: "Add",
   create: "Create",
   close: "Close",
+  dismiss: "Dismiss",
   confirm: "Confirm",
   reset: "Reset",
   back: "Back",
@@ -46,4 +52,6 @@ export default {
   errorMessage: "An unexpected error occurred.",
   tryAgain: "Try Again",
   copied: "Copied!",
+  showMore: "Show more",
+  showLess: "Show less",
 } as const;

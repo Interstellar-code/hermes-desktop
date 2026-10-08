@@ -1,6 +1,12 @@
 export default {
   chat: "Chat",
+  newChat: "Novo chat",
   sessions: "Sessões",
+  projects: "Projetos",
+  chats: "Chats",
+  noChats: "Sem chats",
+  discover: "Descobrir",
+  pinned: "Fixados",
   agents: "Perfis",
   office: "Escritório",
   models: "Modelos",
@@ -13,4 +19,6 @@ export default {
   kanban: "Kanban",
   gateway: "Gateway",
   settings: "Configurações",
+  collapseSidebar: "Recolher barra lateral",
+  expandSidebar: "Expandir barra lateral",
 } as const;

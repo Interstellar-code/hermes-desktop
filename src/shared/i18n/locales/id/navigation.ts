@@ -1,6 +1,12 @@
 export default {
   chat: "Chat",
+  newChat: "Obrolan Baru",
   sessions: "Sesi",
+  projects: "Proyek",
+  chats: "Obrolan",
+  noChats: "Tidak ada obrolan",
+  discover: "Jelajahi",
+  pinned: "Disematkan",
   agents: "Profil",
   office: "Office",
   models: "Model",
@@ -13,4 +19,6 @@ export default {
   kanban: "Kanban",
   gateway: "Gateway",
   settings: "Pengaturan",
+  collapseSidebar: "Ciutkan sidebar",
+  expandSidebar: "Perluas sidebar",
 } as const;
