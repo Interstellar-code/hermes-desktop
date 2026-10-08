@@ -23,6 +23,7 @@ import type {
   RegistryCatalog,
   RegistryDetail,
 } from "../../../../shared/registry";
+import "./Discover.css";
 
 interface DiscoverProps {
   profile?: string;
@@ -58,6 +59,17 @@ const EMPTY: RegistryCatalog = {
 
 type ActionState = "idle" | "working" | "done" | "error";
 
+// Deterministic chip tint for a category so the grid gets the mixed cyan /
+// purple chips of the Matrix artboard using only theme tokens (both variants
+// fall back to --accent-text in themes without the --mx-* accents).
+function categoryChipVariant(category: string): string {
+  let h = 0;
+  for (let i = 0; i < category.length; i++) {
+    h = (h * 31 + category.charCodeAt(i)) | 0;
+  }
+  return h % 2 === 0 ? "mx-chip--info" : "mx-chip--accent";
+}
+
 export default function Discover({
   profile,
   visible,
@@ -65,6 +77,8 @@ export default function Discover({
 }: DiscoverProps): React.JSX.Element {
   const { t } = useI18n();
   const [tab, setTab] = useState<RegistryKind>("skills");
+  // Client-side category filter for the active tab ("all" = no filter).
+  const [category, setCategory] = useState("all");
 
   // "Browse" from the Capabilities screen focuses the matching Discover tab.
   // Guarded so normal mounts (no focus request) aren't forced.
@@ -72,6 +86,12 @@ export default function Discover({
     if (!focusKind) return;
     setTab(focusKind.kind);
   }, [focusKind]);
+
+  // Categories are per-tab; reset the filter whenever the tab changes.
+  useEffect(() => {
+    setCategory("all");
+  }, [tab]);
+
   const [catalog, setCatalog] = useState<RegistryCatalog>(EMPTY);
   // Skills shipped with the hermes-agent repo, folded into the skills list
   // alongside registry skills (deduped).
@@ -216,18 +236,32 @@ export default function Discover({
     return [...list, ...extra];
   }, [catalog, tab, bundledSkills]);
 
+  // Distinct categories present in the active tab's list, capped so the
+  // toolbar stays a single row (search still reaches everything).
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    for (const i of communityList) {
+      if (i.category) set.add(i.category);
+    }
+    return Array.from(set)
+      .sort((a, b) => a.localeCompare(b))
+      .slice(0, 8);
+  }, [communityList]);
+
   const items = useMemo(
     () =>
-      communityList.filter((i) =>
-        matchesQuery(
-          i.name,
-          i.description,
-          i.author,
-          i.category,
-          ...(i.tags ?? []),
-        ),
+      communityList.filter(
+        (i) =>
+          (category === "all" || i.category === category) &&
+          matchesQuery(
+            i.name,
+            i.description,
+            i.author,
+            i.category,
+            ...(i.tags ?? []),
+          ),
       ),
-    [communityList, matchesQuery],
+    [communityList, category, matchesQuery],
   );
 
   // Total available skills (registry + bundled, deduped) regardless of the
@@ -381,7 +415,7 @@ export default function Discover({
                           (confirmUninstall ? (
                             <>
                               <button
-                                className="btn btn-danger btn-sm"
+                                className="mx-btn mx-btn--sm mx-btn--danger"
                                 onClick={() => handleUninstall(kind, item)}
                                 disabled={itemState === "working"}
                               >
@@ -393,7 +427,7 @@ export default function Discover({
                                     })}
                               </button>
                               <button
-                                className="btn btn-secondary btn-sm"
+                                className="mx-btn mx-btn--sm"
                                 onClick={() => setConfirmUninstall(false)}
                                 disabled={itemState === "working"}
                               >
@@ -402,7 +436,7 @@ export default function Discover({
                             </>
                           ) : (
                             <button
-                              className="btn-ghost discover-uninstall-btn"
+                              className="mx-btn mx-btn--sm mx-btn--danger discover-uninstall-btn"
                               onClick={() => setConfirmUninstall(true)}
                               title={t("discover.uninstall")}
                             >
@@ -413,7 +447,7 @@ export default function Discover({
                       </>
                     ) : (
                       <button
-                        className="btn btn-primary btn-sm"
+                        className="mx-btn mx-btn--sm mx-btn--primary"
                         onClick={() => handleInstall(kind, item)}
                         disabled={itemState === "working"}
                         title={t("discover.targetProfile")}
@@ -509,14 +543,14 @@ export default function Discover({
 
       <div className="discover-header">
         <div>
-          <h1 className="discover-title">{t("discover.title")}</h1>
-          <p className="discover-subtitle">{t("discover.subtitle")}</p>
+          <h1 className="mx-h1">{t("discover.title")}</h1>
+          <p className="mx-sub">{t("discover.subtitle")}</p>
         </div>
         <a
           href="https://github.com/hermesonehq/hermes-registry"
           target="_blank"
           rel="noreferrer"
-          className="btn btn-secondary btn-sm"
+          className="mx-btn mx-btn--ghost"
           title="Open Registry on GitHub"
         >
           <ExternalLink size={14} />
@@ -524,25 +558,29 @@ export default function Discover({
         </a>
       </div>
 
-      <div className="discover-tabs">
-        {KINDS.map(({ key, icon: Icon }) => (
+      <div className="mx-tabs" role="tablist" aria-label="Catalog">
+        {KINDS.map(({ key }) => (
           <button
             key={key}
-            className={`discover-tab ${tab === key ? "active" : ""}`}
+            type="button"
+            role="tab"
+            aria-selected={tab === key}
+            className="mx-tab"
             onClick={() => setTab(key)}
           >
-            <Icon size={15} />
             {t(`discover.tabs.${key}`)}
-            <span className="discover-tab-count">{tabCount(key)}</span>
+            <span className="mx-tab-count">{tabCount(key)}</span>
           </button>
         ))}
       </div>
 
       <div className="discover-toolbar">
-        <div className="discover-search">
-          <Search size={15} />
+        <div className="mx-search discover-search-grow">
+          <Search size={14} />
           <input
-            className="discover-search-input"
+            aria-label={t("discover.searchPlaceholder", {
+              kind: t(`discover.tabs.${tab}`).toLowerCase(),
+            })}
             placeholder={t("discover.searchPlaceholder", {
               kind: t(`discover.tabs.${tab}`).toLowerCase(),
             })}
@@ -551,7 +589,7 @@ export default function Discover({
           />
         </div>
         <button
-          className="btn btn-secondary btn-sm"
+          className="mx-btn"
           onClick={() => load(true)}
           disabled={loading}
         >
@@ -559,6 +597,34 @@ export default function Discover({
           {t("discover.refresh")}
         </button>
       </div>
+
+      {categories.length > 0 && (
+        <div
+          className="discover-pills"
+          role="group"
+          aria-label="Category filter"
+        >
+          <button
+            type="button"
+            className={`mx-pill ${category === "all" ? "active" : ""}`}
+            aria-pressed={category === "all"}
+            onClick={() => setCategory("all")}
+          >
+            all
+          </button>
+          {categories.map((c) => (
+            <button
+              type="button"
+              key={c}
+              className={`mx-pill ${category === c ? "active" : ""}`}
+              aria-pressed={category === c}
+              onClick={() => setCategory(c)}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+      )}
 
       {loading ? (
         <div className="discover-state">
@@ -568,10 +634,7 @@ export default function Discover({
         <div className="discover-state">
           <p className="discover-empty-title">{t("discover.loadError")}</p>
           <p className="discover-empty-text">{error}</p>
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={() => load(true)}
-          >
+          <button className="mx-btn mx-btn--sm" onClick={() => load(true)}>
             {t("discover.retry")}
           </button>
         </div>
@@ -602,7 +665,7 @@ export default function Discover({
                 key={key}
                 role="button"
                 tabIndex={0}
-                className="discover-card discover-card--clickable"
+                className="mx-card discover-mx-card discover-card--clickable"
                 onClick={() => openItemDetail(tab, item)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
@@ -612,22 +675,26 @@ export default function Discover({
                 }}
               >
                 <div className="discover-card-head">
-                  <span className="discover-card-iconwrap">
-                    <ActiveIcon size={16} />
+                  <span className="discover-card-glyph" aria-hidden="true">
+                    ✦
                   </span>
                   <span className="discover-card-name">{item.name}</span>
                   {item.category && (
-                    <span className="discover-card-badge">{item.category}</span>
+                    <span
+                      className={`mx-chip discover-card-category ${categoryChipVariant(item.category)}`}
+                    >
+                      {item.category}
+                    </span>
                   )}
                 </div>
                 {meta.length > 0 && (
-                  <div className="discover-card-meta">{meta.join(" · ")}</div>
+                  <div className="mx-meta">{meta.join(" · ")}</div>
                 )}
                 <p className="discover-card-desc">{item.description}</p>
                 {item.tags && item.tags.length > 0 && (
                   <div className="discover-card-tags">
                     {item.tags.slice(0, 4).map((tg) => (
-                      <span key={tg} className="discover-tag">
+                      <span key={tg} className="mx-chip">
                         {tg}
                       </span>
                     ))}
@@ -638,14 +705,14 @@ export default function Discover({
                 )}
                 <div className="discover-card-footer">
                   {done ? (
-                    <span className="discover-card-installed">
-                      <Check size={14} />
+                    <span className="mx-chip mx-chip--ok">
+                      <Check size={12} />
                       {t(`discover.actions.${action.i18n}.done`)}
                     </span>
                   ) : (
                     <button
                       type="button"
-                      className="btn btn-primary btn-sm discover-install-btn"
+                      className="mx-btn mx-btn--sm mx-btn--primary discover-install-btn"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleInstall(tab, item);
