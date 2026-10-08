@@ -368,17 +368,12 @@ export default function ProfileModal({
         {profile && otherProfiles.length > 0 && (
           <div className="mx-other-profiles">
             <span className="mx-other-profiles-label">Other profiles</span>
+            {/*
+              Read-only list. Switching the active profile writes global state,
+              which this lane must not add; the Agents screen owns that action.
+            */}
             {otherProfiles.map((other) => (
-              <button
-                key={other.id}
-                type="button"
-                className="mx-other-profile"
-                onClick={() => {
-                  void window.hermesAPI.setActiveProfile(other.id);
-                  void afterMutation();
-                }}
-                title={`${t("agents.switchProfile")}: ${other.name}`}
-              >
+              <div key={other.id} className="mx-other-profile">
                 <ProfileAvatar
                   name={other.id}
                   color={other.color}
@@ -386,7 +381,7 @@ export default function ProfileModal({
                   size={18}
                 />
                 <span className="mx-other-profile-name">{other.name}</span>
-              </button>
+              </div>
             ))}
           </div>
         )}
@@ -535,10 +530,9 @@ export default function ProfileModal({
 
             {section === "persona" && (
               <div className="profile-modal-pane profile-modal-memory-pane">
-                <Soul
-                  profile={profile.id}
-                  soulPath={`${profile.path.replace(/\/$/, "")}/SOUL.md`}
-                />
+                <div className="memory-soul-tab">
+                  <Soul profile={profile.id} />
+                </div>
               </div>
             )}
 

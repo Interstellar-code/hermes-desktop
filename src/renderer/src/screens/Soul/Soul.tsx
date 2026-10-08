@@ -6,8 +6,6 @@ import "./Soul.css";
 
 interface SoulProps {
   profile?: string;
-  /** Absolute path of the SOUL.md file, when the caller already knows it. */
-  soulPath?: string;
 }
 
 function formatBytes(bytes: number): string {
@@ -15,7 +13,7 @@ function formatBytes(bytes: number): string {
   return `${(bytes / 1024).toFixed(1)} KB`;
 }
 
-function Soul({ profile, soulPath }: SoulProps): React.JSX.Element {
+function Soul({ profile }: SoulProps): React.JSX.Element {
   const { t } = useI18n();
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
@@ -106,9 +104,7 @@ function Soul({ profile, soulPath }: SoulProps): React.JSX.Element {
       </div>
 
       <div className="mx-soul-meta">
-        <span className="mx-chip mx-soul-path" title={soulPath ?? "SOUL.md"}>
-          {soulPath ?? "SOUL.md"}
-        </span>
+        <span className="mx-chip mx-soul-path">SOUL.md</span>
         <span className="mx-chip">{size}</span>
         {saved && (
           <span className="mx-chip mx-chip--ok">{t("common.saved")}</span>

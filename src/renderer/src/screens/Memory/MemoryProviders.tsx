@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Check, ExternalLink } from "lucide-react";
 import { useI18n } from "../../components/useI18n";
 import type { MemoryProviderInfo } from "./types";
@@ -48,39 +48,46 @@ function ProviderKeyFields({
   profile?: string;
   t: (key: string, options?: Record<string, unknown>) => string;
 }): React.JSX.Element {
+  // The same provider can be mounted twice (Memory screen + profile modal), so
+  // ids must not be derived from the provider name alone.
+  const fieldIdPrefix = useId();
   return (
     <div className="memory-provider-fields mx-provider-fields">
-      {provider.envVars.map((envKey) => (
-        <div key={envKey} className="memory-provider-field">
-          <label
-            className="memory-provider-field-label"
-            htmlFor={`mx-${provider.name}-${envKey}`}
-          >
-            {envKey}
-            {providerSavedKey === envKey && (
-              <span className="mx-chip mx-chip--ok">{t("common.saved")}</span>
-            )}
-          </label>
-          <input
-            id={`mx-${provider.name}-${envKey}`}
-            type="password"
-            value={providerEnv[envKey] || ""}
-            onChange={(e) =>
-              setProviderEnv((prev) => ({ ...prev, [envKey]: e.target.value }))
-            }
-            onBlur={async () => {
-              await window.hermesAPI.setEnv(
-                envKey,
-                providerEnv[envKey] || "",
-                profile,
-              );
-              setProviderSavedKey(envKey);
-              setTimeout(() => setProviderSavedKey(null), 2000);
-            }}
-            placeholder={t("memory.enterEnvKey", { key: envKey })}
-          />
-        </div>
-      ))}
+      {provider.envVars.map((envKey) => {
+        const inputId = `${fieldIdPrefix}-${envKey}`;
+        return (
+          <div key={envKey} className="memory-provider-field">
+            <label className="memory-provider-field-label" htmlFor={inputId}>
+              {envKey}
+              {providerSavedKey === envKey && (
+                <span className="mx-chip mx-chip--ok">{t("common.saved")}</span>
+              )}
+            </label>
+            <input
+              id={inputId}
+              className="input"
+              type="password"
+              value={providerEnv[envKey] || ""}
+              onChange={(e) =>
+                setProviderEnv((prev) => ({
+                  ...prev,
+                  [envKey]: e.target.value,
+                }))
+              }
+              onBlur={async () => {
+                await window.hermesAPI.setEnv(
+                  envKey,
+                  providerEnv[envKey] || "",
+                  profile,
+                );
+                setProviderSavedKey(envKey);
+                setTimeout(() => setProviderSavedKey(null), 2000);
+              }}
+              placeholder={t("memory.enterEnvKey", { key: envKey })}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -153,6 +160,21 @@ export function MemoryProviders({
                   <span className="memory-provider-badge mx-chip mx-chip--ok">
                     <Check size={10} /> {t("memory.active")}
                   </span>
+                  {PROVIDER_URLS[activeCard.name] && (
+                    <button
+                      type="button"
+                      className="mx-provider-docs"
+                      onClick={() =>
+                        window.hermesAPI.openExternal(
+                          PROVIDER_URLS[activeCard.name],
+                        )
+                      }
+                      aria-label={t("memory.openProviderWebsite")}
+                      title={t("memory.openProviderWebsite")}
+                    >
+                      <ExternalLink size={12} />
+                    </button>
+                  )}
                 </div>
                 <span className="memory-provider-desc">
                   {t(activeCard.description)}
@@ -232,8 +254,7 @@ export function MemoryProviders({
           </div>
 
           <p className="mx-providers-footnote mx-meta">
-            Only one provider is active at a time. Activating another switches
-            the stored provider; the previous one stays on disk.
+            Only one provider is active at a time.
           </p>
         </>
       )}

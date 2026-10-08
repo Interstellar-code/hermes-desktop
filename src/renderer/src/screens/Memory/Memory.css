@@ -216,6 +216,12 @@
   flex-wrap: wrap;
 }
 
+/* Website button on the active row: pushed right so the name/chip keep the
+   leading edge, matching where it sits on the inactive cards. */
+.mx-memory .mx-provider-title .mx-provider-docs {
+  margin-left: auto;
+}
+
 .mx-memory .mx-provider-title b {
   font-size: 13px;
   color: var(--text-primary);
@@ -288,6 +294,8 @@
   gap: 6px;
 }
 
+/* Inputs keep className="input" so they stay styled under every theme; these
+   rules only refine them. */
 .mx-memory .memory-provider-field input {
   background: var(--bg-primary);
   border: 1px solid var(--border-bright);
