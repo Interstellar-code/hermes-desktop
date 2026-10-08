@@ -1,0 +1,58 @@
+/* Discover — Matrix screen styles (L2).
+   Screen-only rules on top of the shared mx- building blocks; reads only
+   theme tokens so every theme keeps rendering. main.css is untouched. */
+
+/* Buttons on this screen read uppercase (OPEN REGISTRY / REFRESH / INSTALL),
+   matching the Matrix artboard. */
+.discover-container .mx-btn {
+  text-transform: uppercase;
+}
+
+/* Toolbar search grows to fill the row. */
+.discover-search-grow {
+  flex: 1;
+}
+
+/* Category filter pills. Active pill reads in the accent colour
+   (mx-pill in main.css has no active state of its own). */
+.discover-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.discover-container .mx-pill.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Catalog cards: mx-card box + artboard padding/rhythm. font-family inherit
+   so the theme font (monospace under Matrix) applies to card text. */
+.discover-mx-card {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 14px;
+  font-family: inherit;
+}
+
+/* ✦ lead glyph next to the item name. */
+.discover-card-glyph {
+  flex-shrink: 0;
+  color: var(--accent);
+  font-size: 13px;
+  line-height: 1;
+}
+
+/* Category chip sits flush right in the card head and reads uppercase. */
+.discover-card-head .mx-chip {
+  flex-shrink: 0;
+}
+.discover-card-category {
+  text-transform: uppercase;
+}
+
+/* Install button / installed chip hug the card's bottom-right corner. */
+.discover-container .discover-card-footer {
+  justify-content: flex-end;
+}
