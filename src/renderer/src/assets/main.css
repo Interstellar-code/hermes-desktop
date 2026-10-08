@@ -17976,3 +17976,73 @@ body:has(.shell-vibrant),
   align-items: flex-start;
   gap: 12px;
 }
+
+/* ----- Matrix shell details (brand, session dots, Home rain) ----- */
+[data-theme="matrix"] .sidebar-brand {
+  justify-content: space-between;
+}
+[data-theme="matrix"] .sidebar-brand::before {
+  content: "MATRIX // DESKTOP";
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+  white-space: nowrap;
+}
+[data-theme="matrix"] .sidebar-collapsed .sidebar-brand::before {
+  content: none;
+}
+[data-theme="matrix"] .sidebar-recent-session-dot--active {
+  color: var(--accent);
+  filter: drop-shadow(0 0 4px var(--accent));
+}
+
+.mx-rain {
+  display: none;
+}
+[data-theme="matrix"] .chat-empty {
+  position: relative;
+  overflow: hidden;
+}
+[data-theme="matrix"] .chat-empty > :not(.mx-rain) {
+  position: relative;
+}
+[data-theme="matrix"] .mx-rain {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: space-around;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.25;
+  color: var(--accent);
+  opacity: 0.07;
+  pointer-events: none;
+  overflow: hidden;
+}
+[data-theme="matrix"] .mx-rain span {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  animation: mx-rain-fall 14s linear infinite;
+}
+[data-theme="matrix"] .mx-rain span:nth-child(2n) {
+  animation-duration: 19s;
+  animation-delay: -6s;
+}
+[data-theme="matrix"] .mx-rain span:nth-child(3n) {
+  animation-duration: 23s;
+  animation-delay: -11s;
+}
+@keyframes mx-rain-fall {
+  from {
+    transform: translateY(-40%);
+  }
+  to {
+    transform: translateY(110%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-theme="matrix"] .mx-rain span {
+    animation: none;
+  }
+}

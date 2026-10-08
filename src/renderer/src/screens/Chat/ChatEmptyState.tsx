@@ -42,6 +42,17 @@ const SUGGESTIONS: Suggestion[] = [
   },
 ];
 
+const RAIN_COLUMNS = [
+  "ﾊﾐ1ｴﾈ0ﾏｱ7ﾘﾂﾑ",
+  "0ﾓｶ1ﾍｻﾜ9ｷﾃ",
+  "ﾅｲ3ﾎﾛ1ｹﾒ0ﾀﾆ",
+  "7ﾁﾕｺ0ﾗ1ﾋ",
+  "ﾐ1ｳﾉﾍ4ｾﾙ0ｦ",
+  "ｸ0ﾄﾝ1ﾔｿ2",
+  "ﾂ5ﾑｱ0ﾈﾏ1ｴﾊ",
+  "1ﾃｷ9ﾜｻﾍ0ﾓ",
+];
+
 interface ChatEmptyStateProps {
   onSelectSuggestion: (text: string) => void;
 }
@@ -53,6 +64,12 @@ export const ChatEmptyState = memo(function ChatEmptyState({
 
   return (
     <div className="chat-empty">
+      {/* Decorative digital rain; hidden by CSS outside the Matrix theme. */}
+      <div className="mx-rain" aria-hidden="true">
+        {RAIN_COLUMNS.map((column, i) => (
+          <span key={i}>{column}</span>
+        ))}
+      </div>
       <div className="chat-empty-icon">
         <span
           className="chat-empty-logo"
