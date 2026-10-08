@@ -17655,7 +17655,8 @@ body:has(.shell-vibrant),
   background: var(--bg-primary);
 }
 
-[data-theme="matrix"] .sidebar {
+[data-theme="matrix"] .sidebar,
+[data-theme="matrix"] .app.shell-vibrant .sidebar {
   background: var(--bg-secondary);
   border-right: 1px solid var(--border);
 }
@@ -17711,7 +17712,8 @@ body:has(.shell-vibrant),
   background: rgba(0, 255, 65, 0.1);
 }
 
-[data-theme="matrix"] .status-bar {
+[data-theme="matrix"] .status-bar,
+[data-theme="matrix"] .app.shell-vibrant .status-bar {
   font-size: 10px;
   background: var(--bg-secondary);
   border-top: 1px solid var(--border);
@@ -17752,6 +17754,9 @@ body:has(.shell-vibrant),
 [data-theme="matrix"] .chat-input-wrapper {
   border: 1px solid rgba(0, 255, 65, 0.4);
   background: var(--bg-tertiary);
+}
+[data-theme="matrix"] .chat-input-wrapper:focus-within {
+  border-color: var(--accent);
 }
 
 @keyframes mx-blink {
@@ -17812,7 +17817,7 @@ body:has(.shell-vibrant),
 .mx-btn--primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: var(--accent-fg, var(--bg-primary));
+  color: var(--accent-fg, #fff);
   font-weight: 800;
 }
 .mx-btn--primary:hover {

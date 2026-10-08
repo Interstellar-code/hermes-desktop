@@ -5,8 +5,17 @@ import { DEFAULT_DARK_THEME, THEMES } from "../src/renderer/src/constants";
 
 const CSS = readFileSync(
   join(import.meta.dirname, "../src/renderer/src/assets/main.css"),
-  "utf8",
+  "utf-8",
 );
+
+/** Custom properties declared in a theme's own `[data-theme="<id>"] { … }` block. */
+function themeVars(id: string): string[] {
+  const block = CSS.match(
+    new RegExp(`^\\[data-theme="${id}"\\] \\{([^}]*)\\}`, "m"),
+  );
+  if (!block) return [];
+  return [...block[1].matchAll(/^\s*(--[a-z0-9-]+):/gm)].map((m) => m[1]);
+}
 
 // @lat: [[matrix-theme]]
 describe("Matrix theme", () => {
@@ -15,9 +24,15 @@ describe("Matrix theme", () => {
     expect(THEMES.find((t) => t.id === "matrix")?.appearance).toBe("dark");
   });
 
+  it("defines every token the dark theme defines", () => {
+    const dark = themeVars("dark");
+    expect(dark.length).toBeGreaterThan(20);
+    expect(themeVars("matrix")).toEqual(expect.arrayContaining(dark));
+  });
+
   it("has a token block for every registered theme", () => {
     for (const { id } of THEMES) {
-      expect(CSS).toContain(`[data-theme="${id}"] {`);
+      expect(themeVars(id).length).toBeGreaterThan(0);
     }
   });
 });
