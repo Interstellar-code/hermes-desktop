@@ -12,6 +12,7 @@ This directory defines the high-level concepts, business logic, and architecture
 - [[web-preview]] — the in-app split-screen webview and the `partition`-based gate that lets only it load remote HTTPS while staying sandboxed.
 - [[code-blocks]] — collapsible long code blocks, and why expansion state is keyed on source position to survive react-markdown's streaming remounts.
 - [[loading-indicators]] — the thinking-orbs dotted-orb loaders behind every loading state, and the OrbLoader wrapper that pins dark/light from the Hermes theme registry instead of the library's auto-detection.
+- [[matrix-theme]] — the default Matrix dark theme: token block, theme-scoped shell styling, and the shared `mx-` classes restyled screens build on.
 - [[window-chrome]] — the browser-style title bar where open-conversation tabs sit on top of the window drag region, clickable while empty space still drags.
 - [[desktop-updates]] — GitHub release checks, startup upgrade button behavior, and the Settings auto-upgrade preference.
 - [[desktop-security]] — verified Unix bootstrap execution and safe rendering of runtime provider names.
