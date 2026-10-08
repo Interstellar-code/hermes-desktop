@@ -1,0 +1,513 @@
+/* Matrix Kanban screen styling (L4).
+   Screen-only look for the Kanban board, built on the shared mx- classes
+   and theme tokens so every theme renders correctly. Column/card tones
+   read the per-status data-tone attribute set by Kanban.tsx; hues that the
+   Matrix artboard expresses as cyan/purple use the optional --mx-* accents
+   with standard-token fallbacks (same chain as the mx-chip classes). */
+
+.mxk-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  padding: 24px 32px 0;
+  gap: 12px;
+}
+
+.mxk-grow {
+  flex-grow: 1;
+}
+
+/* ---- Header ---- */
+
+.mxk-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.mxk-h1 {
+  text-transform: uppercase;
+}
+
+.mxk-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.mxk-btn {
+  text-transform: uppercase;
+}
+
+/* Toggle-on state (SHOW ARCHIVED active) — accent treatment like the
+   artboard's active tool buttons. */
+.mxk-btn-on {
+  color: var(--accent-text);
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  background: var(--accent-subtle);
+}
+
+/* ---- Board selector pills ---- */
+
+.mxk-boards-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.mxk-boards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mxk-board[aria-selected="true"] {
+  border-color: var(--accent);
+  color: var(--accent-text);
+  background: var(--accent-subtle);
+}
+
+.mxk-board:disabled,
+.mxk-board-add:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mxk-board-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+.mxk-board-name {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mxk-board-add {
+  border-style: dashed;
+}
+
+/* ---- Banners ---- */
+
+.mxk-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--error) 55%, transparent);
+  border-radius: 6px;
+  background: var(--error-bg);
+  color: var(--error);
+  font-size: 11px;
+  padding: 8px 12px;
+  flex-shrink: 0;
+}
+
+.mxk-error-dismiss {
+  margin-left: auto;
+  background: none;
+  border: 0;
+  padding: 2px;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.mxk-note {
+  border: 1px solid var(--border-bright);
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 11px;
+  padding: 8px 12px;
+  flex-shrink: 0;
+}
+
+/* ---- Columns ---- */
+
+.mxk-columns {
+  flex: 1;
+  display: grid;
+  /* Column count is dynamic (8 canonical statuses, +1 archived), so
+     auto-flow columns; the board scrolls horizontally like a JIRA board
+     when the lanes overflow. */
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(220px, 1fr);
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 20px;
+  min-height: 0;
+}
+
+.mxk-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.mxk-col--drop {
+  background: var(--accent-subtle);
+  outline: 2px dashed var(--accent);
+  outline-offset: -2px;
+}
+
+/* Status accent along the lane's top edge (artboard's colored top border).
+   Only the six "active work" lanes get it; triage and to-do stay plain. */
+.mxk-col[data-tone="scheduled"] {
+  border-top: 2px solid var(--warning);
+}
+.mxk-col[data-tone="ready"] {
+  border-top: 2px solid var(--mx-cyan, var(--info, var(--accent-text)));
+}
+.mxk-col[data-tone="running"] {
+  border-top: 2px solid var(--accent);
+}
+.mxk-col[data-tone="blocked"] {
+  border-top: 2px solid var(--error);
+}
+.mxk-col[data-tone="review"] {
+  border-top: 2px solid var(--mx-purple, var(--accent-text));
+}
+.mxk-col[data-tone="done"] {
+  border-top: 2px solid var(--success);
+}
+
+.mxk-col-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 12px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.mxk-col-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.mxk-col-empty {
+  padding: 20px;
+  text-align: center;
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+/* JIRA-style status dot. Tones map to semantic tokens (plus the --mx-*
+   accents where the artboard uses cyan/purple) so every theme renders. */
+.mxk-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: var(--text-muted);
+}
+.mxk-dot[data-tone="neutral"] {
+  background: var(--text-muted);
+}
+.mxk-dot[data-tone="todo"] {
+  background: var(--text-primary);
+}
+.mxk-dot[data-tone="scheduled"] {
+  background: var(--warning);
+}
+.mxk-dot[data-tone="ready"] {
+  background: var(--mx-cyan, var(--info, var(--accent-text)));
+}
+.mxk-dot[data-tone="running"] {
+  background: var(--accent);
+}
+.mxk-dot[data-tone="blocked"] {
+  background: var(--error);
+}
+.mxk-dot[data-tone="review"] {
+  background: var(--mx-purple, var(--accent-text));
+}
+.mxk-dot[data-tone="done"] {
+  background: var(--success);
+}
+.mxk-dot[data-tone="archived"] {
+  background: var(--text-muted);
+  opacity: 0.6;
+}
+
+/* ---- Cards ---- */
+
+.mxk-card {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 9px 10px;
+  background: color-mix(in srgb, var(--accent) 4%, var(--bg-tertiary));
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  cursor: grab;
+  transition:
+    border-color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.mxk-card:hover {
+  border-color: var(--border-bright);
+}
+
+.mxk-card:active {
+  cursor: grabbing;
+}
+
+.mxk-card--dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+
+.mxk-card--readonly {
+  cursor: default;
+}
+
+/* Left priority accent bar — only when the card carries a priority. */
+.mxk-card[data-prio]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 6px 0 0 6px;
+  background: var(--text-muted);
+}
+.mxk-card[data-prio="p0"]::before {
+  background: var(--error);
+}
+.mxk-card[data-prio="p1"]::before {
+  background: var(--warning);
+}
+.mxk-card[data-prio="p2"]::before {
+  background: var(--accent);
+}
+
+.mxk-card-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.mxk-card-id {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mxk-card-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.mxk-age-live {
+  color: var(--accent);
+}
+
+/* Pulsing "live" dot on running cards. */
+.mxk-live {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: var(--accent);
+  animation: mxk-live-pulse 1.6s ease-out infinite;
+}
+
+@keyframes mxk-live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 5px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mxk-live {
+    animation: none;
+  }
+}
+
+.mxk-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.mxk-assignee {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.mxk-avatar {
+  width: 15px;
+  height: 15px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-fg, var(--bg-primary));
+  font-size: 7px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.mxk-avatar-none {
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+}
+
+.mxk-assignee-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 96px;
+}
+
+.mxk-assignee-none {
+  opacity: 0.7;
+}
+
+/* ---- Card hover actions ---- */
+
+.mxk-card-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.mxk-card:hover .mxk-card-actions,
+.mxk-card:focus-within .mxk-card-actions {
+  opacity: 1;
+}
+
+.mxk-card-action {
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.mxk-card-action:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.mxk-card-action--danger:hover:not(:disabled) {
+  color: var(--error);
+  border-color: color-mix(in srgb, var(--error) 45%, transparent);
+}
+
+.mxk-card-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---- Tooltips (data-tooltip, mirroring the shell's pattern) ---- */
+
+.mxk-btn[data-tooltip],
+.mxk-card-action[data-tooltip],
+.mxk-board-add[data-tooltip] {
+  position: relative;
+}
+
+.mxk-btn[data-tooltip]::after,
+.mxk-card-action[data-tooltip]::after,
+.mxk-board-add[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 11px;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 10;
+}
+
+.mxk-btn[data-tooltip]:hover:not(:disabled)::after,
+.mxk-card-action[data-tooltip]:hover:not(:disabled)::after,
+.mxk-board-add[data-tooltip]:hover::after {
+  opacity: 1;
+}
+
+/* The rightmost header button (New task) sits hard against the pane edge,
+   so its centered tooltip would clip the viewport — anchor right instead. */
+.mxk-actions .mxk-btn[data-tooltip]:last-child::after {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+/* ---- Keyboard focus ---- */
+
+.mxk-board:focus-visible,
+.mxk-board-add:focus-visible,
+.mxk-btn:focus-visible,
+.mxk-card-action:focus-visible,
+.mxk-error-dismiss:focus-visible {
+  outline: 2px solid var(--border-bright);
+  outline-offset: 2px;
+}
