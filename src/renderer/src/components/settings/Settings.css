@@ -1,0 +1,267 @@
+/* Matrix Desktop — Settings modal. Token-only rules scoped under `.mx-settings`
+   (put on the modal content by SettingsModal), so the restyle applies under
+   every theme without leaking into the standalone Settings screen or the
+   provider/onboarding screens that share the settings-* class names. */
+
+.mx-settings {
+  background: var(--bg-tertiary);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid var(--border-bright);
+}
+
+.mx-settings .settings-modal-sidebar {
+  width: 220px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+}
+
+.mx-settings .settings-modal-title {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.mx-settings .settings-modal-nav {
+  gap: 12px;
+}
+
+.mx-settings .settings-modal-nav-group-label {
+  font-size: 9.5px;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+}
+
+.mx-settings .settings-modal-nav-item {
+  font-size: 12px;
+  padding: 7px 10px;
+  border-radius: 5px;
+  color: var(--text-secondary);
+}
+
+.mx-settings .settings-modal-nav-item:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.mx-settings .settings-modal-nav-item.active {
+  background: var(--bg-active);
+  color: var(--accent);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.mx-settings .settings-modal-content {
+  padding: 22px 28px;
+}
+
+.mx-settings .settings-modal-pane {
+  gap: 16px;
+}
+
+.mx-settings .settings-field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.mx-settings .settings-field-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.mx-settings .settings-field input.input,
+.mx-settings .settings-field select.input,
+.mx-settings .settings-field textarea.input {
+  background: var(--bg-primary);
+  border-color: var(--border-bright);
+  font-size: 12px;
+}
+
+.mx-settings .settings-field input.input:focus,
+.mx-settings .settings-field select.input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.mx-settings .settings-connection-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mx-settings .settings-connection-row .input {
+  flex-grow: 1;
+  min-width: 160px;
+}
+
+/* Segmented mode / transport pickers (Local · Remote · SSH tunnel). */
+.mx-settings .settings-theme-options,
+.mx-settings .settings-seg {
+  gap: 8px;
+}
+
+.mx-settings .settings-theme-option,
+.mx-settings .settings-seg-btn {
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--accent-text);
+  background: none;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  border-radius: 5px;
+}
+
+.mx-settings .settings-theme-option:hover:not(:disabled),
+.mx-settings .settings-seg-btn:hover:not(:disabled) {
+  background: var(--accent-subtle);
+}
+
+.mx-settings .settings-theme-option.active,
+.mx-settings .settings-seg-btn.active {
+  background: var(--accent-subtle);
+  border-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 700;
+}
+
+.mx-settings .settings-mode-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+/* Connection health + transport probe chips. */
+.mx-settings .settings-transport-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 10.5px;
+}
+
+.mx-settings .settings-transport-status span:first-child,
+.mx-settings .settings-transport-status code {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  border: 1px solid color-mix(in srgb, var(--text-muted) 45%, transparent);
+  color: var(--text-muted);
+  background: none;
+}
+
+.mx-settings .settings-transport-status--ok span:first-child {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 60%, transparent);
+}
+
+.mx-settings .settings-transport-status--warn span:first-child {
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 60%, transparent);
+}
+
+.mx-settings .settings-transport-status--error span:first-child {
+  color: var(--error);
+  border-color: color-mix(in srgb, var(--error) 60%, transparent);
+}
+
+.mx-settings .settings-subsection {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+  gap: 12px;
+}
+
+.mx-settings .settings-subsection-head {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.mx-settings .settings-saved {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--success);
+  border: 1px solid color-mix(in srgb, var(--success) 60%, transparent);
+  border-radius: 3px;
+  padding: 1px 6px;
+}
+
+.mx-settings .settings-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mx-settings .settings-toggle-title {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mx-settings .settings-group,
+.mx-settings .settings-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.mx-settings .settings-row + .settings-row {
+  border-top-color: var(--border);
+}
+
+.mx-settings .settings-row-label {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mx-settings .settings-row-hint {
+  font-size: 11px;
+}
+
+.mx-settings .settings-api-key-banner {
+  border: 1px solid color-mix(in srgb, var(--warning) 45%, transparent);
+  background: var(--warning-bg);
+  border-radius: 8px;
+}
+
+.mx-settings .settings-api-key-banner--info {
+  border-color: var(--border-bright);
+  background: var(--bg-secondary);
+}
+
+.mx-settings .settings-pane-flash {
+  border-radius: 3px;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: var(--accent-subtle);
+}
+
+/* Appearance: theme swatch grid. */
+.mx-settings .settings-theme-grid {
+  gap: 10px;
+}
+
+.mx-settings .settings-theme-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+}
+
+.mx-settings .settings-theme-card.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.mx-settings .settings-theme-card-name {
+  font-size: 10.5px;
+  color: var(--text-secondary);
+}

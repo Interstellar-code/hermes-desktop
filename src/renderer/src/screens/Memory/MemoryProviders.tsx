@@ -31,6 +31,60 @@ interface MemoryProvidersProps {
   onRefresh: () => void;
 }
 
+function ProviderKeyFields({
+  provider,
+  providerEnv,
+  providerSavedKey,
+  setProviderEnv,
+  setProviderSavedKey,
+  profile,
+  t,
+}: {
+  provider: MemoryProviderInfo;
+  providerEnv: Record<string, string>;
+  providerSavedKey: string | null;
+  setProviderEnv: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  setProviderSavedKey: (key: string | null) => void;
+  profile?: string;
+  t: (key: string, options?: Record<string, unknown>) => string;
+}): React.JSX.Element {
+  return (
+    <div className="memory-provider-fields mx-provider-fields">
+      {provider.envVars.map((envKey) => (
+        <div key={envKey} className="memory-provider-field">
+          <label
+            className="memory-provider-field-label"
+            htmlFor={`mx-${provider.name}-${envKey}`}
+          >
+            {envKey}
+            {providerSavedKey === envKey && (
+              <span className="mx-chip mx-chip--ok">{t("common.saved")}</span>
+            )}
+          </label>
+          <input
+            id={`mx-${provider.name}-${envKey}`}
+            type="password"
+            value={providerEnv[envKey] || ""}
+            onChange={(e) =>
+              setProviderEnv((prev) => ({ ...prev, [envKey]: e.target.value }))
+            }
+            onBlur={async () => {
+              await window.hermesAPI.setEnv(
+                envKey,
+                providerEnv[envKey] || "",
+                profile,
+              );
+              setProviderSavedKey(envKey);
+              setTimeout(() => setProviderSavedKey(null), 2000);
+            }}
+            placeholder={t("memory.enterEnvKey", { key: envKey })}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function MemoryProviders({
   providers,
   activeProvider,
@@ -64,8 +118,11 @@ export function MemoryProviders({
     onRefresh();
   }
 
+  const activeCard = providerList.find((p) => p.active) ?? null;
+  const inactiveCards = providerList.filter((p) => !p.active);
+
   return (
-    <div className="memory-providers">
+    <div className="memory-providers mx-providers mx-memory">
       <div className="memory-providers-hint">
         {t("memory.providersHint")}
         {currentProvider ? (
@@ -82,97 +139,86 @@ export function MemoryProviders({
       </div>
 
       {providerList.length === 0 ? (
-        <div className="memory-empty">
+        <div className="memory-empty mx-entries-empty">
           <p>{t("memory.noProvidersFound")}</p>
         </div>
       ) : (
-        <div className="memory-providers-grid">
-          {providerList.map((p) => (
-            <div
-              key={p.name}
-              className={`memory-provider-card ${p.active ? "memory-provider-active" : ""}`}
-            >
-              <div className="memory-provider-header">
-                <div className="memory-provider-name">
-                  {p.name}
-                  {p.active && (
-                    <span className="memory-provider-badge">
-                      <Check size={10} /> {t("memory.active")}
-                    </span>
-                  )}
+        <>
+          {activeCard && (
+            <div className="memory-provider-card mx-card mx-provider-active-card memory-provider-active">
+              <span className="mx-provider-dot" aria-hidden="true" />
+              <div className="mx-provider-body">
+                <div className="mx-provider-title">
+                  <b>{activeCard.name}</b>
+                  <span className="memory-provider-badge mx-chip mx-chip--ok">
+                    <Check size={10} /> {t("memory.active")}
+                  </span>
                 </div>
-                {PROVIDER_URLS[p.name] && (
-                  <button
-                    className="btn-ghost"
-                    style={{ padding: 2, opacity: 0.6 }}
-                    onClick={() =>
-                      window.hermesAPI.openExternal(PROVIDER_URLS[p.name])
-                    }
-                    title={t("memory.openProviderWebsite")}
-                  >
-                    <ExternalLink size={12} />
-                  </button>
+                <span className="memory-provider-desc">
+                  {t(activeCard.description)}
+                </span>
+                {activeCard.envVars.length > 0 && (
+                  <ProviderKeyFields
+                    provider={activeCard}
+                    providerEnv={providerEnv}
+                    providerSavedKey={providerSavedKey}
+                    setProviderEnv={setProviderEnv}
+                    setProviderSavedKey={setProviderSavedKey}
+                    profile={profile}
+                    t={t}
+                  />
                 )}
               </div>
-              <div className="memory-provider-desc">{t(p.description)}</div>
-
-              {p.envVars.length > 0 && (
-                <div className="memory-provider-fields">
-                  {p.envVars.map((envKey) => (
-                    <div key={envKey} className="memory-provider-field">
-                      <label className="memory-provider-field-label">
-                        {envKey}
-                        {providerSavedKey === envKey && (
-                          <span
-                            style={{
-                              color: "var(--success)",
-                              fontSize: 10,
-                              marginLeft: 6,
-                            }}
-                          >
-                            {t("common.saved")}
-                          </span>
-                        )}
-                      </label>
-                      <input
-                        className="input"
-                        type="password"
-                        value={providerEnv[envKey] || ""}
-                        onChange={(e) =>
-                          setProviderEnv((prev) => ({
-                            ...prev,
-                            [envKey]: e.target.value,
-                          }))
-                        }
-                        onBlur={async () => {
-                          await window.hermesAPI.setEnv(
-                            envKey,
-                            providerEnv[envKey] || "",
-                            profile,
-                          );
-                          setProviderSavedKey(envKey);
-                          setTimeout(() => setProviderSavedKey(null), 2000);
-                        }}
-                        placeholder={t("memory.enterEnvKey", { key: envKey })}
-                        style={{ fontSize: 12 }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-
               <div className="memory-provider-actions">
-                {p.active ? (
+                <button
+                  type="button"
+                  className="mx-btn mx-btn--ghost"
+                  onClick={handleDeactivate}
+                  disabled={activating !== null}
+                >
+                  {t("memory.deactivate")}
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="memory-providers-grid mx-providers-grid">
+            {inactiveCards.map((p) => (
+              <div key={p.name} className="memory-provider-card mx-card">
+                <div className="memory-provider-header">
+                  <div className="memory-provider-name">{p.name}</div>
+                  {PROVIDER_URLS[p.name] && (
+                    <button
+                      type="button"
+                      className="mx-provider-docs"
+                      onClick={() =>
+                        window.hermesAPI.openExternal(PROVIDER_URLS[p.name])
+                      }
+                      aria-label={t("memory.openProviderWebsite")}
+                      title={t("memory.openProviderWebsite")}
+                    >
+                      <ExternalLink size={12} />
+                    </button>
+                  )}
+                </div>
+                <span className="memory-provider-desc">{t(p.description)}</span>
+
+                {p.envVars.length > 0 && (
+                  <ProviderKeyFields
+                    provider={p}
+                    providerEnv={providerEnv}
+                    providerSavedKey={providerSavedKey}
+                    setProviderEnv={setProviderEnv}
+                    setProviderSavedKey={setProviderSavedKey}
+                    profile={profile}
+                    t={t}
+                  />
+                )}
+
+                <div className="memory-provider-actions">
                   <button
-                    className="btn btn-secondary btn-sm"
-                    onClick={handleDeactivate}
-                    disabled={activating !== null}
-                  >
-                    {t("memory.deactivate")}
-                  </button>
-                ) : (
-                  <button
-                    className="btn btn-primary btn-sm"
+                    type="button"
+                    className="mx-btn mx-btn--primary mx-btn--sm"
                     onClick={() => handleActivate(p.name)}
                     disabled={activating !== null}
                   >
@@ -180,11 +226,16 @@ export function MemoryProviders({
                       ? t("memory.activating")
                       : t("memory.activate")}
                   </button>
-                )}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+
+          <p className="mx-providers-footnote mx-meta">
+            Only one provider is active at a time. Activating another switches
+            the stored provider; the previous one stays on disk.
+          </p>
+        </>
       )}
     </div>
   );

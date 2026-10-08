@@ -12,8 +12,8 @@ export function CapacityCards({ data }: CapacityCardsProps): React.JSX.Element {
 
   return (
     <div className="memory-capacity-grid">
-      <div className="memory-capacity-card">
-        <div className="memory-capacity-card-header">
+      <div className="memory-capacity-card mx-card mx-capacity-card">
+        <div className="memory-capacity-card-header mx-capacity-card-header">
           <Database size={16} />
           <span>{t("memory.agentMemory")}</span>
         </div>
@@ -22,12 +22,12 @@ export function CapacityCards({ data }: CapacityCardsProps): React.JSX.Element {
           limit={data.memory.charLimit}
           label=""
         />
-        <div className="memory-capacity-card-footer">
+        <div className="memory-capacity-card-footer mx-meta">
           {data.memory.entries.length} {t("memory.memories")}
         </div>
       </div>
-      <div className="memory-capacity-card">
-        <div className="memory-capacity-card-header">
+      <div className="memory-capacity-card mx-card mx-capacity-card">
+        <div className="memory-capacity-card-header mx-capacity-card-header">
           <User size={16} />
           <span>{t("memory.userProfile")}</span>
         </div>
@@ -36,7 +36,7 @@ export function CapacityCards({ data }: CapacityCardsProps): React.JSX.Element {
           limit={data.user.charLimit}
           label=""
         />
-        <div className="memory-capacity-card-footer">
+        <div className="memory-capacity-card-footer mx-meta">
           {data.stats.totalSessions} {t("memory.sessions")}
         </div>
       </div>

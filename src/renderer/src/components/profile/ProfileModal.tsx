@@ -26,6 +26,7 @@ import ProfileWalletPane from "./ProfileWalletPane";
 import ProfileSyncPane from "./ProfileSyncPane";
 import { OrbLoader } from "../OrbLoader";
 import type { ProfileSection } from "./ProfileModalContext";
+import "./Profile.css";
 
 /** Mirrors the entry shape returned by `window.hermesAPI.listProfiles()`. */
 interface ProfileInfo {
@@ -97,6 +98,9 @@ export default function ProfileModal({
   const id = name;
   const { t } = useI18n();
   const [profile, setProfile] = useState<ProfileInfo | null>(null);
+  // Same listProfiles() call the modal already makes; kept so the sidebar can
+  // list the other profiles without a second IPC.
+  const [allProfiles, setAllProfiles] = useState<ProfileInfo[]>([]);
   const [section, setSection] = useState<ProfileSection>(
     initialSection ?? "profile",
   );
@@ -122,6 +126,7 @@ export default function ProfileModal({
   const load = useCallback(async (): Promise<void> => {
     try {
       const list = await window.hermesAPI.listProfiles();
+      setAllProfiles(list);
       setProfile(list.find((p) => p.id === id) ?? null);
     } catch {
       /* keep last-known profile */
@@ -312,6 +317,7 @@ export default function ProfileModal({
       ]
     : [];
   const agentName = profile?.name || id;
+  const otherProfiles = allProfiles.filter((p) => p.id !== id);
 
   return (
     <AppModal
@@ -320,7 +326,7 @@ export default function ProfileModal({
         if (!nextOpen) onClose();
       }}
       onExitComplete={onExited}
-      className="profile-modal"
+      className="profile-modal mx-profile"
       overlayClassName="profile-modal-overlay"
       labelledBy="profile-modal-title"
     >
@@ -357,6 +363,32 @@ export default function ProfileModal({
               </button>
             ))}
           </nav>
+        )}
+
+        {profile && otherProfiles.length > 0 && (
+          <div className="mx-other-profiles">
+            <span className="mx-other-profiles-label">Other profiles</span>
+            {otherProfiles.map((other) => (
+              <button
+                key={other.id}
+                type="button"
+                className="mx-other-profile"
+                onClick={() => {
+                  void window.hermesAPI.setActiveProfile(other.id);
+                  void afterMutation();
+                }}
+                title={`${t("agents.switchProfile")}: ${other.name}`}
+              >
+                <ProfileAvatar
+                  name={other.id}
+                  color={other.color}
+                  avatar={other.avatar}
+                  size={18}
+                />
+                <span className="mx-other-profile-name">{other.name}</span>
+              </button>
+            ))}
+          </div>
         )}
       </aside>
 
@@ -503,9 +535,10 @@ export default function ProfileModal({
 
             {section === "persona" && (
               <div className="profile-modal-pane profile-modal-memory-pane">
-                <div className="memory-soul-tab">
-                  <Soul profile={profile.id} />
-                </div>
+                <Soul
+                  profile={profile.id}
+                  soulPath={`${profile.path.replace(/\/$/, "")}/SOUL.md`}
+                />
               </div>
             )}
 
@@ -523,7 +556,11 @@ export default function ProfileModal({
                   />
                 ) : memoryError ? (
                   <div className="memory-error">{memoryError}</div>
-                ) : null}
+                ) : (
+                  <div className="mx-profile-empty">
+                    {t("memory.noMemoriesYet")}
+                  </div>
+                )}
               </div>
             )}
 

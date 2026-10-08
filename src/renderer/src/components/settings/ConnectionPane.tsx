@@ -194,8 +194,15 @@ export default function ConnectionPane(): React.JSX.Element {
         <label className="settings-field-label">
           {t("settings.connectionMode")}
         </label>
-        <div className="settings-theme-options">
+        <div
+          className="settings-theme-options"
+          role="radiogroup"
+          aria-label={t("settings.connectionMode")}
+        >
           <button
+            type="button"
+            role="radio"
+            aria-checked={connMode === "local"}
             className={`settings-theme-option ${connMode === "local" ? "active" : ""}`}
             onClick={() => {
               setConnMode("local");
@@ -208,6 +215,9 @@ export default function ConnectionPane(): React.JSX.Element {
             </span>
           </button>
           <button
+            type="button"
+            role="radio"
+            aria-checked={connMode === "remote"}
             className={`settings-theme-option ${connMode === "remote" ? "active" : ""}`}
             onClick={() => void handleSwitchToRemote()}
           >
@@ -217,6 +227,9 @@ export default function ConnectionPane(): React.JSX.Element {
             </span>
           </button>
           <button
+            type="button"
+            role="radio"
+            aria-checked={connMode === "ssh"}
             className={`settings-theme-option ${connMode === "ssh" ? "active" : ""}`}
             onClick={() => void handleSwitchToSsh()}
           >

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Plus, Trash } from "../../assets/icons";
 import { useI18n } from "../../components/useI18n";
 import type { MemoryEntry } from "./types";
@@ -21,6 +21,15 @@ export function MemoryEntries({
   const [newEntry, setNewEntry] = useState("");
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+
+  const filtered = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return entries;
+    return entries.filter((entry) =>
+      entry.content.toLowerCase().includes(needle),
+    );
+  }, [entries, query]);
 
   async function handleAddEntry(): Promise<void> {
     if (!newEntry.trim()) return;
@@ -62,13 +71,23 @@ export function MemoryEntries({
   }
 
   return (
-    <div className="memory-entries">
+    <div className="memory-entries mx-memory">
       <div className="memory-entries-header">
-        <span className="memory-entries-count">
+        <span className="memory-entries-count mx-meta">
           {t("memory.entries", { count: entries.length })}
         </span>
+        <label className="mx-search mx-entries-search">
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search memories…"
+            aria-label="Search memories"
+          />
+        </label>
         <button
-          className="btn btn-primary btn-sm"
+          type="button"
+          className="mx-btn mx-btn--primary"
           onClick={() => setShowAdd(!showAdd)}
         >
           <Plus size={13} />
@@ -76,26 +95,26 @@ export function MemoryEntries({
         </button>
       </div>
 
-      {error && (
-        <div className="memory-error" style={{ marginBottom: 12 }}>
-          {error}
-        </div>
-      )}
+      {error && <div className="memory-error">{error}</div>}
 
       {showAdd && (
-        <div className="memory-entry-form">
+        <div className="memory-entry-form mx-entry-form">
           <textarea
             className="memory-entry-textarea"
             value={newEntry}
             onChange={(e) => setNewEntry(e.target.value)}
             placeholder={t("memory.entriesPlaceholder")}
             rows={3}
+            aria-label={t("memory.addMemory")}
             autoFocus
           />
           <div className="memory-entry-form-actions">
-            <span className="memory-entry-chars">{newEntry.length} chars</span>
+            <span className="memory-entry-chars mx-meta">
+              {newEntry.length} chars
+            </span>
             <button
-              className="btn btn-secondary btn-sm"
+              type="button"
+              className="mx-btn mx-btn--ghost"
               onClick={() => {
                 setShowAdd(false);
                 setNewEntry("");
@@ -104,7 +123,8 @@ export function MemoryEntries({
               Cancel
             </button>
             <button
-              className="btn btn-primary btn-sm"
+              type="button"
+              className="mx-btn mx-btn--primary"
               onClick={handleAddEntry}
               disabled={!newEntry.trim()}
             >
@@ -115,83 +135,100 @@ export function MemoryEntries({
       )}
 
       {entries.length === 0 ? (
-        <div className="memory-empty">
+        <div className="memory-empty mx-entries-empty">
           <p>{t("memory.noMemoriesYet")}</p>
           <p className="memory-empty-hint">{t("memory.addManuallyHint")}</p>
         </div>
+      ) : filtered.length === 0 ? (
+        <div className="memory-empty mx-entries-empty">
+          <p>No memories match this search.</p>
+        </div>
       ) : (
-        entries.map((entry) => (
-          <div key={entry.index} className="memory-entry-card">
-            {editingIndex === entry.index ? (
-              <div className="memory-entry-form">
-                <textarea
-                  className="memory-entry-textarea"
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                  rows={3}
-                  autoFocus
-                />
-                <div className="memory-entry-form-actions">
-                  <span className="memory-entry-chars">
-                    {t("memory.chars", { count: editContent.length })}
-                  </span>
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => setEditingIndex(null)}
-                  >
-                    {t("memory.cancel")}
-                  </button>
-                  <button
-                    className="btn btn-primary btn-sm"
-                    onClick={handleSaveEdit}
-                  >
-                    {t("memory.save")}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="memory-entry-content">{entry.content}</div>
-                <div className="memory-entry-actions">
-                  <button
-                    className="btn-ghost memory-entry-btn"
-                    onClick={() => {
-                      setEditingIndex(entry.index);
-                      setEditContent(entry.content);
-                    }}
-                  >
-                    {t("memory.edit")}
-                  </button>
-                  {confirmDelete === entry.index ? (
-                    <span className="memory-entry-confirm">
-                      {t("memory.deleteConfirm")}
-                      <button
-                        className="btn-ghost"
-                        style={{ color: "var(--error)" }}
-                        onClick={() => handleDeleteEntry(entry.index)}
-                      >
-                        {t("memory.yes")}
-                      </button>
-                      <button
-                        className="btn-ghost"
-                        onClick={() => setConfirmDelete(null)}
-                      >
-                        {t("memory.no")}
-                      </button>
+        <div className="mx-entry-list">
+          {filtered.map((entry) => (
+            <div
+              key={entry.index}
+              className="memory-entry-card mx-card mx-entry-card"
+            >
+              {editingIndex === entry.index ? (
+                <div className="memory-entry-form mx-entry-form">
+                  <textarea
+                    className="memory-entry-textarea"
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    aria-label={t("memory.edit")}
+                    rows={3}
+                    autoFocus
+                  />
+                  <div className="memory-entry-form-actions">
+                    <span className="memory-entry-chars mx-meta">
+                      {t("memory.chars", { count: editContent.length })}
                     </span>
-                  ) : (
                     <button
-                      className="btn-ghost memory-entry-btn"
-                      onClick={() => setConfirmDelete(entry.index)}
+                      type="button"
+                      className="mx-btn mx-btn--ghost"
+                      onClick={() => setEditingIndex(null)}
                     >
-                      <Trash size={13} />
+                      {t("memory.cancel")}
                     </button>
-                  )}
+                    <button
+                      type="button"
+                      className="mx-btn mx-btn--primary"
+                      onClick={handleSaveEdit}
+                    >
+                      {t("memory.save")}
+                    </button>
+                  </div>
                 </div>
-              </>
-            )}
-          </div>
-        ))
+              ) : (
+                <>
+                  <div className="memory-entry-content">{entry.content}</div>
+                  <div className="memory-entry-actions">
+                    <button
+                      type="button"
+                      className="mx-btn mx-btn--ghost mx-btn--sm"
+                      onClick={() => {
+                        setEditingIndex(entry.index);
+                        setEditContent(entry.content);
+                      }}
+                    >
+                      {t("memory.edit")}
+                    </button>
+                    {confirmDelete === entry.index ? (
+                      <span className="memory-entry-confirm">
+                        {t("memory.deleteConfirm")}
+                        <button
+                          type="button"
+                          className="mx-btn mx-btn--sm mx-btn--danger"
+                          onClick={() => handleDeleteEntry(entry.index)}
+                        >
+                          {t("memory.yes")}
+                        </button>
+                        <button
+                          type="button"
+                          className="mx-btn mx-btn--ghost mx-btn--sm"
+                          onClick={() => setConfirmDelete(null)}
+                        >
+                          {t("memory.no")}
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="mx-icon-btn"
+                        onClick={() => setConfirmDelete(entry.index)}
+                        aria-label="Delete memory"
+                        title="Delete memory"
+                      >
+                        <Trash size={12} />
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

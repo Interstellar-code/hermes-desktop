@@ -9,6 +9,7 @@ import { MemoryEntries } from "./MemoryEntries";
 import { MemoryProfile } from "./MemoryProfile";
 import { MemoryProviders } from "./MemoryProviders";
 import type { MemoryData, MemoryProviderInfo, MemoryTab } from "./types";
+import "./Memory.css";
 
 function Memory({ profile }: { profile?: string }): React.JSX.Element {
   const { t } = useI18n();
@@ -38,8 +39,8 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
 
   if (loading || !data) {
     return (
-      <div className="settings-container">
-        <h1 className="settings-header">{t("memory.title")}</h1>
+      <div className="settings-container mx-page mx-memory">
+        <h1 className="mx-h1">{t("memory.title")}</h1>
         <div style={{ display: "flex", justifyContent: "center", padding: 48 }}>
           <OrbLoader state="searching" size={64} />
         </div>
@@ -48,16 +49,20 @@ function Memory({ profile }: { profile?: string }): React.JSX.Element {
   }
 
   return (
-    <div className="settings-container">
-      <div className="memory-header">
+    <div className="settings-container mx-page mx-memory">
+      <div className="mx-page-header">
         <div>
-          <h1 className="settings-header" style={{ marginBottom: 4 }}>
-            {t("memory.title")}
-          </h1>
-          <p className="memory-subtitle">{t("memory.subtitle")}</p>
+          <h1 className="mx-h1">{t("memory.title")}</h1>
+          <p className="mx-sub">{t("memory.subtitle")}</p>
         </div>
-        <button className="btn btn-secondary btn-sm" onClick={loadData}>
-          <Refresh size={13} />
+        <button
+          type="button"
+          className="mx-icon-btn"
+          onClick={loadData}
+          aria-label="Refresh"
+          title="Refresh"
+        >
+          <Refresh size={14} />
         </button>
       </div>
 

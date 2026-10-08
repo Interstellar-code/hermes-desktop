@@ -1,0 +1,321 @@
+/* Matrix Desktop — Memory screen (Agent Memory / User Profile / Providers /
+   Persona). Every rule reads theme tokens only, so the screen renders
+   correctly under every theme; the matrix theme just reads best.
+
+   Scope: everything hangs off `.mx-memory`, which the screen, the entries
+   list, the user-profile editor and the providers list each put on their own
+   root so the profile modal gets the same look when it embeds them. */
+
+.mx-memory {
+  gap: 14px;
+}
+
+.mx-memory .memory-subtitle {
+  font-size: 11.5px;
+}
+
+.mx-memory .memory-error {
+  border: 1px solid color-mix(in srgb, var(--error) 55%, transparent);
+  background: var(--error-bg);
+  color: var(--error);
+  border-radius: 5px;
+  padding: 8px 11px;
+  font-size: 11.5px;
+}
+
+/* ----- Capacity cards (used chars / limit + %) ----- */
+.mx-memory .memory-capacity-grid {
+  gap: 12px;
+  margin-bottom: 0;
+}
+
+.mx-memory .mx-capacity-card {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mx-memory .mx-capacity-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0;
+}
+
+.mx-memory .mx-capacity-meter {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mx-memory .memory-capacity-value {
+  font-size: 10.5px;
+}
+
+.mx-memory .mx-capacity-pct {
+  font-size: 10.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.mx-memory .memory-capacity-track {
+  height: 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.mx-memory .memory-capacity-fill {
+  border-radius: 3px;
+}
+
+.mx-memory .memory-capacity-card-footer {
+  font-size: 10.5px;
+  margin-top: 0;
+}
+
+/* ----- Tabs ----- */
+.mx-memory .mx-tabs {
+  gap: 4px;
+  margin-bottom: 0;
+}
+
+/* ----- Entries toolbar ----- */
+.mx-memory .memory-entries-header {
+  gap: 10px;
+  margin-bottom: 0;
+}
+
+.mx-memory .memory-entries-count {
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+.mx-memory .mx-entries-search {
+  width: 300px;
+  padding: 5px 9px;
+}
+
+.mx-memory .mx-entries-empty {
+  border: 1px dashed var(--border-bright);
+  background: none;
+}
+
+/* ----- Entry rows ----- */
+/* The page itself scrolls (mx-page), so the list stays in normal flow. */
+.mx-memory .mx-entry-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mx-memory .mx-entry-card {
+  padding: 11px 14px;
+  margin-bottom: 0;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.mx-memory .memory-entry-content {
+  flex-grow: 1;
+  min-width: 0;
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+
+.mx-memory .memory-entry-actions {
+  margin-top: 0;
+  flex-shrink: 0;
+  align-items: flex-start;
+}
+
+.mx-memory .mx-entry-form {
+  width: 100%;
+  background: var(--bg-primary);
+  border-color: var(--border-bright);
+}
+
+.mx-memory .memory-entry-textarea,
+.mx-memory .memory-profile-textarea {
+  background: var(--bg-primary);
+  border-color: var(--border-bright);
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+
+.mx-memory .memory-entry-textarea:focus,
+.mx-memory .memory-profile-textarea:focus {
+  border-color: var(--accent);
+}
+
+/* ----- User profile ----- */
+.mx-memory .memory-profile {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.mx-memory .memory-profile-hint {
+  font-size: 11.5px;
+}
+
+.mx-memory .memory-profile-textarea {
+  flex-grow: 1;
+  min-height: 220px;
+}
+
+.mx-memory .memory-profile-footer {
+  margin-top: 0;
+}
+
+/* ----- Providers ----- */
+.mx-memory .mx-providers {
+  margin-top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mx-memory .memory-providers-hint {
+  font-size: 11.5px;
+  margin-bottom: 0;
+}
+
+.mx-memory .mx-provider-active-card {
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  border-color: var(--accent);
+  background: var(--accent-subtle);
+}
+
+.mx-memory .mx-provider-active-card .mx-provider-body {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.mx-memory .mx-provider-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.mx-memory .mx-provider-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mx-memory .mx-provider-title b {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.mx-memory .memory-provider-badge {
+  background: none;
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
+.mx-memory .mx-providers-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.mx-memory .memory-provider-card {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  border-radius: 8px;
+}
+
+.mx-memory .memory-provider-name {
+  font-size: 13px;
+  text-transform: none;
+}
+
+.mx-memory .mx-provider-docs {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.mx-memory .mx-provider-docs:hover {
+  color: var(--text-primary);
+  border-color: var(--border-bright);
+}
+
+.mx-memory .memory-provider-desc {
+  font-size: 10.5px;
+  margin-bottom: 0;
+}
+
+.mx-memory .mx-provider-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mx-memory .memory-provider-field-label {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mx-memory .memory-provider-field input {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-bright);
+  border-radius: 5px;
+  padding: 7px 9px;
+  font-size: 11.5px;
+  color: var(--text-primary);
+}
+
+.mx-memory .memory-provider-field input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.mx-memory .memory-provider-actions {
+  margin-top: auto;
+  align-self: flex-start;
+}
+
+.mx-memory .mx-providers-footnote {
+  font-size: 10.5px;
+}
+
+/* The Persona tab embeds Soul, which brings its own scoped stylesheet. */
+.mx-memory .memory-soul-tab {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-top: 0;
+}
