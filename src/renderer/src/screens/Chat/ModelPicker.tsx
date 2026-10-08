@@ -153,7 +153,7 @@ export const ModelPicker = memo(function ModelPicker({
 
   return (
     <div className="chat-model-bar" ref={pickerRef}>
-      <button className="chat-model-trigger" onClick={toggle}>
+      <button className="chat-model-trigger mx-pill" onClick={toggle}>
         <span className="chat-model-name">{displayModel}</span>
         <ChevronDown size={12} />
       </button>

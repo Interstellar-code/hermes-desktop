@@ -135,7 +135,7 @@ export const ContextFolderChip = memo(function ContextFolderChip({
     return (
       <div className="chat-ctxfolder-picker" ref={containerRef}>
         <button
-          className="chat-meta-chip"
+          className="chat-meta-chip mx-pill"
           onClick={() => setIsOpen((v) => !v)}
           title={t("chat.setContextFolder")}
           type="button"
@@ -151,7 +151,7 @@ export const ContextFolderChip = memo(function ContextFolderChip({
   return (
     <div className="chat-ctxfolder-group" ref={containerRef}>
       <button
-        className="chat-meta-chip chat-meta-chip--active"
+        className="chat-meta-chip chat-meta-chip--active mx-pill"
         onClick={() => setIsOpen((v) => !v)}
         title={t("chat.contextFolderActive", { path: contextFolder })}
         type="button"
