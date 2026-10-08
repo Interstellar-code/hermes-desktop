@@ -55,6 +55,43 @@ interface SchedulesProps {
   profile?: string;
 }
 
+// Cron day-of-week index (0=Sunday … 6=Saturday) → schedules.<key> i18n key.
+const DAY_KEYS = [
+  "sunday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+];
+
+// Presentation-only humanizing of a cron/shorthand schedule ("0 15 * * *"
+// → "daily 15:00", "30 7 * * 1" → "Monday 07:30", "30m" → "every 30 min").
+// Returns "" unless minute and hour are plain integers and day-of-week is
+// "*" or a single integer 0–6, with day-of-month and month "*" — anything
+// else (steps, ranges, lists, wildcards) would render invented text.
+export function humanSchedule(
+  expr: string,
+  dayName: (key: string) => string = (key) =>
+    key.charAt(0).toUpperCase() + key.slice(1),
+): string {
+  const s = expr.trim();
+  let m = /^(\d+)m$/i.exec(s);
+  if (m) return `every ${m[1]} min`;
+  m = /^(\d+)h$/i.exec(s);
+  if (m) return `every ${m[1]} h`;
+  const fields = s.split(/\s+/);
+  if (fields.length !== 5) return "";
+  const [min, hour, dom, mon, dow] = fields;
+  if (dom !== "*" || mon !== "*") return "";
+  if (!/^\d+$/.test(min) || !/^\d+$/.test(hour)) return "";
+  const time = `${hour.padStart(2, "0")}:${min.padStart(2, "0")}`;
+  if (dow === "*") return `daily ${time}`;
+  if (!/^\d$/.test(dow) || parseInt(dow, 10) > 6) return "";
+  return `${dayName(DAY_KEYS[parseInt(dow, 10)] ?? "")} ${time}`;
+}
+
 function Schedules({ profile }: SchedulesProps): React.JSX.Element {
   const { t } = useI18n();
   const [jobs, setJobs] = useState<CronJob[]>([]);
@@ -249,49 +286,6 @@ function Schedules({ profile }: SchedulesProps): React.JSX.Element {
     } catch {
       return iso;
     }
-  }
-
-  // Presentation-only humanizing of a cron/shorthand schedule ("0 15 * * *"
-  // → "daily 15:00", "0 9 * * 1" → "Mondays 09:00", "30m" → "every 30 min").
-  // Returns "" when the expression is not a form we render confidently.
-  function humanSchedule(expr: string): string {
-    const s = expr.trim();
-    let m = /^(\d+)m$/i.exec(s);
-    if (m) return `every ${m[1]} min`;
-    m = /^(\d+)h$/i.exec(s);
-    if (m) return `every ${m[1]} h`;
-    const fields = s.split(/\s+/);
-    if (fields.length !== 5) return "";
-    const [min, hour, dom, mon, dow] = fields;
-    if (dom !== "*" || mon !== "*") return "";
-    const hourParts = hour.split(",");
-    const minParts = min.split(",");
-    if (dow === "*") {
-      if (minParts.length !== 1) return "";
-      return `daily ${hourParts
-        .map((h) => `${h.padStart(2, "0")}:${min.padStart(2, "0")}`)
-        .join(", ")}`;
-    }
-    const dayKeys = [
-      "sunday",
-      "monday",
-      "tuesday",
-      "wednesday",
-      "thursday",
-      "friday",
-      "saturday",
-    ];
-    const days = dow.split(",").map((d) => {
-      const key = dayKeys[parseInt(d, 10)];
-      return key ? t(`schedules.${key}`) : "";
-    });
-    if (days.some((d) => !d)) return "";
-    const time =
-      minParts.length === 1 && hourParts.length === 1
-        ? ` ${hour.padStart(2, "0")}:${min.padStart(2, "0")}`
-        : "";
-    const label = days.length === 1 ? `${days[0]}s` : days.join(", ");
-    return `${label}${time}`;
   }
 
   if (loading) {
@@ -564,8 +558,7 @@ function Schedules({ profile }: SchedulesProps): React.JSX.Element {
         <div>
           <h1 className="mx-h1 mxs-h1">{t("schedules.title")}</h1>
           <p className="mx-sub">
-            {t("schedules.subtitle")}. {totalJobs} jobs · {activeCount} active ·{" "}
-            {pausedCount} paused
+            {totalJobs} jobs · {activeCount} active · {pausedCount} paused
             {completedCount > 0 ? ` · ${completedCount} completed` : ""}
           </p>
         </div>
@@ -613,7 +606,9 @@ function Schedules({ profile }: SchedulesProps): React.JSX.Element {
       ) : (
         <div className="mxs-list">
           {jobs.map((job) => {
-            const human = humanSchedule(job.schedule);
+            const human = humanSchedule(job.schedule, (key) =>
+              t(`schedules.${key}`),
+            );
             const stateChip =
               job.state === "active"
                 ? "mx-chip mx-chip--ok"
@@ -699,7 +694,7 @@ function Schedules({ profile }: SchedulesProps): React.JSX.Element {
                     <span>
                       {t("schedules.lastRun")} {formatTime(job.last_run_at)}
                       {job.last_status === "ok" && (
-                        <span className="mxs-ok" aria-label="ok">
+                        <span className="mxs-ok" role="img" aria-label="ok">
                           {" "}
                           ✓
                         </span>
