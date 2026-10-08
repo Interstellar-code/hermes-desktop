@@ -254,13 +254,13 @@ export const MessageRow = memo(function MessageRow({
       <div
         className={`chat-bubble chat-bubble-${msg.role}${
           msg.error ? " chat-bubble-error" : ""
-        }`}
+        }${msg.role === "agent" ? " mx-card" : ""}`}
       >
         {msg.content && !isLoading && !msg.isSlashLoader && (
           <div className="chat-bubble-actions">
             <button
               type="button"
-              className="chat-bubble-copy"
+              className="chat-bubble-copy mx-icon-btn"
               onClick={handleCopy}
               title={copied ? t("common.copied") : t("chat.copyMessage")}
               aria-label={copied ? t("common.copied") : t("chat.copyMessage")}

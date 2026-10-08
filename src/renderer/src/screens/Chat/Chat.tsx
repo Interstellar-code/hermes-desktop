@@ -4,12 +4,14 @@ import { Zap, Globe } from "lucide-react";
 import { ChatInput, type ChatInputHandle } from "./ChatInput";
 import { ChatEmptyState } from "./ChatEmptyState";
 import { MessageList } from "./MessageList";
+import { ChatHeader } from "./ChatHeader";
 import { ModelPicker } from "./ModelPicker";
 import { ReasoningEffortPicker } from "./ReasoningEffortPicker";
 import { ContextFolderChip } from "./ContextFolderChip";
 import { WorktreePanel } from "./WorktreePanel";
 import { RemoteFolderPicker } from "./RemoteFolderPicker";
 import { WebPreviewPanel } from "./WebPreviewPanel";
+import "./Chat.css";
 import { useChatScroll } from "./hooks/useChatScroll";
 import { useTranscriptState } from "./hooks/useTranscriptState";
 import { useChatIPC } from "./hooks/useChatIPC";
@@ -1033,6 +1035,8 @@ function Chat({
     >
       <ConfigHealthBanner profile={profile} onOpenDiagnose={onOpenDiagnose} />
 
+      <ChatHeader model={chatDisplayModel} contextUsage={contextUsage} />
+
       <div className="chat-body">
         <div className="chat-messages" ref={containerRef}>
           {messages.length === 0 ? (
@@ -1104,10 +1108,13 @@ function Chat({
               <div className="chat-fast-wrapper">
                 <button
                   type="button"
-                  className={`btn-ghost chat-fast-btn ${fastMode ? "chat-fast-active" : ""}`}
+                  className={`btn-ghost chat-fast-btn mx-pill ${
+                    fastMode ? "chat-fast-active" : ""
+                  }`}
                   onClick={toggleFastMode}
                 >
                   <Zap size={14} />
+                  {fastMode ? t("chat.fastModeOn") : t("chat.fastMode")}
                 </button>
                 <div
                   className={`chat-fast-popover ${fastMode ? "chat-fast-active-popover" : ""}`}
@@ -1138,28 +1145,20 @@ function Chat({
               />
               <button
                 type="button"
-                className={`btn-ghost chat-tool-btn ${webPreviewVisible ? "chat-tool-btn-active" : ""}`}
+                className={`btn-ghost chat-tool-btn mx-pill ${
+                  webPreviewVisible ? "chat-tool-btn-active" : ""
+                }`}
                 onClick={() => setWebPreviewVisible((v) => !v)}
+                aria-label={
+                  webPreviewVisible ? "Hide web preview" : "Show web preview"
+                }
+                aria-pressed={webPreviewVisible}
                 title={
                   webPreviewVisible ? "Hide web preview" : "Show web preview"
                 }
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 28,
-                  height: 28,
-                  padding: 0,
-                  borderRadius: 6,
-                  color: webPreviewVisible
-                    ? "var(--accent-text)"
-                    : "var(--text-secondary)",
-                  background: webPreviewVisible
-                    ? "color-mix(in srgb, var(--accent-text) 10%, transparent)"
-                    : "transparent",
-                }}
               >
                 <Globe size={14} />
+                web
               </button>
             </>
           }

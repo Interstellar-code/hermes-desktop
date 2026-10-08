@@ -59,7 +59,7 @@ export const ApprovalCard = memo(function ApprovalCard({
 
   return (
     <div
-      className={`chat-clarify chat-approval-card${
+      className={`chat-clarify chat-approval-card mx-card${
         resolved ? " chat-clarify--resolved" : ""
       }`}
     >
@@ -84,7 +84,7 @@ export const ApprovalCard = memo(function ApprovalCard({
               <button
                 key={choice}
                 type="button"
-                className={`chat-clarify-choice chat-approval-choice--${choice}`}
+                className={`chat-clarify-choice mx-btn chat-approval-choice--${choice}`}
                 disabled={submitting || !isActive}
                 onClick={() => {
                   if (choice === "always") {
@@ -113,7 +113,7 @@ export const ApprovalCard = memo(function ApprovalCard({
               <div className="chat-approval-confirm-actions">
                 <button
                   type="button"
-                  className="chat-clarify-choice"
+                  className="chat-clarify-choice mx-btn"
                   disabled={submitting}
                   onClick={() => setConfirmAlways(false)}
                 >
@@ -121,7 +121,7 @@ export const ApprovalCard = memo(function ApprovalCard({
                 </button>
                 <button
                   type="button"
-                  className="chat-clarify-send"
+                  className="chat-clarify-send mx-btn mx-btn--primary"
                   disabled={submitting}
                   onClick={() => void submit("always")}
                 >

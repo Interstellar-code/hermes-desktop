@@ -65,7 +65,7 @@ export const ClarifyCard = memo(function ClarifyCard({
 
   if (resolved) {
     return (
-      <div className="chat-clarify chat-clarify--resolved">
+      <div className="chat-clarify chat-clarify--resolved mx-card">
         <div className="chat-clarify-question">{msg.question}</div>
         <div className="chat-clarify-answer">
           {msg.answer && msg.answer.trim()
@@ -79,7 +79,7 @@ export const ClarifyCard = memo(function ClarifyCard({
   const hasChoices = msg.choices.length > 0;
 
   return (
-    <div className="chat-clarify">
+    <div className="chat-clarify mx-card">
       <div className="chat-clarify-question">
         {msg.question || t("chat.clarify.defaultQuestion")}
       </div>
@@ -89,7 +89,7 @@ export const ClarifyCard = memo(function ClarifyCard({
           {msg.choices.map((choice, i) => (
             <button
               key={`${msg.requestId}-${i}`}
-              className="chat-clarify-choice"
+              className="chat-clarify-choice mx-btn"
               disabled={submitting || unavailable}
               onClick={() => void submit(choice)}
             >
@@ -113,7 +113,7 @@ export const ClarifyCard = memo(function ClarifyCard({
             }}
           />
           <button
-            className="chat-clarify-send"
+            className="chat-clarify-send mx-btn mx-btn--primary"
             disabled={submitting || unavailable || !text.trim()}
             onClick={() => void submit(text)}
           >

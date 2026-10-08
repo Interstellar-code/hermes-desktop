@@ -145,7 +145,7 @@ export const ReasoningEffortPicker = memo(function ReasoningEffortPicker({
   return (
     <div className="chat-reasoning-bar" ref={pickerRef}>
       <button
-        className="chat-reasoning-trigger"
+        className="chat-reasoning-trigger mx-pill"
         onClick={() => {
           setSaveError(false);
           setIsOpen((open) => !open);

@@ -10,7 +10,7 @@ export interface ContextUsage {
   cacheWriteTokens?: number;
 }
 
-function fmtTokens(n: number): string {
+export function fmtTokens(n: number): string {
   if (n >= 1_000_000) {
     const val = (n / 1_000_000).toFixed(1);
     return `${val.endsWith(".0") ? val.slice(0, -2) : val}M`;

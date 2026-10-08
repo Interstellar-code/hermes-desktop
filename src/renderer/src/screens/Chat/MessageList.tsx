@@ -68,7 +68,7 @@ function TypingIndicator({
   return (
     <div className="chat-message chat-message-agent">
       <HermesAvatar active agent={agentAvatar} />
-      <div className="chat-bubble chat-bubble-agent">
+      <div className="chat-bubble chat-bubble-agent mx-card">
         {toolProgress ? (
           <div className="chat-tool-progress">{toolProgress}</div>
         ) : (

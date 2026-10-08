@@ -38,6 +38,8 @@ const THEME_APPEARANCE = new Map(
   THEMES.map((theme) => [theme.id, theme.appearance]),
 );
 
+const COMPOSER_FIELD_ID = "chat-composer-input";
+
 export interface ChatInputHandle {
   setText(text: string): void;
   appendText(text: string): void;
@@ -669,8 +671,12 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
               style={{ display: "none" }}
               onChange={handleFileInputChange}
             />
+            <label className="mx-sr-only" htmlFor={COMPOSER_FIELD_ID}>
+              {t("chat.typeMessage")}
+            </label>
             <textarea
               ref={inputRef}
+              id={COMPOSER_FIELD_ID}
               className="chat-input"
               placeholder={t("chat.typeMessage")}
               value={input}
@@ -689,7 +695,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
             />
             <div className="chat-input-toolbar">
               <button
-                className="chat-attach-btn"
+                className="chat-attach-btn mx-icon-btn"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isLoading}
                 title={t("chat.attach")}
@@ -700,7 +706,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
               </button>
               {voice.supported && (
                 <button
-                  className={`chat-mic-btn${
+                  className={`chat-mic-btn mx-icon-btn${
                     voice.recording ? " chat-mic-btn--recording" : ""
                   }`}
                   onClick={() => {
@@ -737,11 +743,16 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
               {contextUsage && contextUsage.used > 0 && (
                 <ContextGauge {...contextUsage} />
               )}
+              <span className="chat-input-hint" aria-hidden>
+                ⏎ send · ⇧⏎ newline
+              </span>
               {isLoading ? (
                 <button
                   className="chat-send-btn chat-stop-btn"
                   onClick={onAbort}
                   title={t("common.stop")}
+                  aria-label={t("common.stop")}
+                  type="button"
                 >
                   <Stop size={14} />
                 </button>
@@ -752,15 +763,19 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
                       className="chat-btw-btn"
                       onClick={handleQuickAsk}
                       title={t("chat.quickAskTitle")}
+                      aria-label={t("chat.quickAskTitle")}
+                      type="button"
                     >
                       💭
                     </button>
                   )}
                   <button
-                    className="chat-send-btn"
+                    className="chat-send-btn mx-btn--primary"
                     onClick={handleSend}
                     disabled={!canSend}
                     title={t("chat.send")}
+                    aria-label={t("chat.send")}
+                    type="button"
                   >
                     <ArrowUp size={20} />
                   </button>

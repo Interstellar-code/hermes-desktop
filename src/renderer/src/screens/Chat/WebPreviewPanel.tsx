@@ -442,6 +442,7 @@ export const WebPreviewPanel = memo(function WebPreviewPanel({
           onClick={handleBack}
           disabled={!canGoBack}
           title={t("common.back") || "Back"}
+          aria-label={t("common.back") || "Back"}
         >
           <ArrowLeft size={16} />
         </button>
@@ -451,6 +452,7 @@ export const WebPreviewPanel = memo(function WebPreviewPanel({
           onClick={handleForward}
           disabled={!canGoForward}
           title={t("common.forward") || "Forward"}
+          aria-label={t("common.forward") || "Forward"}
         >
           <ArrowRight size={16} />
         </button>
@@ -459,6 +461,7 @@ export const WebPreviewPanel = memo(function WebPreviewPanel({
           className="web-preview-btn"
           onClick={handleReload}
           title={t("common.reload") || "Reload"}
+          aria-label={t("common.reload") || "Reload"}
         >
           <RotateCw size={16} className={isLoading ? "animate-spin" : ""} />
         </button>
@@ -469,6 +472,7 @@ export const WebPreviewPanel = memo(function WebPreviewPanel({
           <Globe size={13} className="web-preview-globe-icon" />
           <input
             type="text"
+            aria-label="Search or enter web address"
             className="web-preview-address-input"
             value={inputUrl}
             onChange={(e) => setInputUrl(e.target.value)}
@@ -482,6 +486,7 @@ export const WebPreviewPanel = memo(function WebPreviewPanel({
             className={`web-preview-btn web-preview-annotate-btn ${isInspecting ? "web-preview-btn-active" : ""}`}
             onClick={toggleAnnotation}
             title={isInspecting ? "Stop annotating" : "Annotate page"}
+            aria-label={isInspecting ? "Stop annotating" : "Annotate page"}
             aria-pressed={isInspecting}
           >
             <MousePointerClick size={16} />
@@ -494,6 +499,7 @@ export const WebPreviewPanel = memo(function WebPreviewPanel({
             className="web-preview-btn"
             onClick={handleOpenExternal}
             title={t("worktree.open") || "Open in system browser"}
+            aria-label={t("worktree.open") || "Open in system browser"}
           >
             <ExternalLink size={15} />
           </button>
@@ -502,6 +508,7 @@ export const WebPreviewPanel = memo(function WebPreviewPanel({
             className="web-preview-btn"
             onClick={onClose}
             title={t("worktree.closeFile") || "Close"}
+            aria-label={t("worktree.closeFile") || "Close"}
           >
             <X size={16} />
           </button>
