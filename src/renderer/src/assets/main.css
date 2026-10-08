@@ -18021,8 +18021,9 @@ body:has(.shell-vibrant),
   overflow: hidden;
 }
 [data-theme="matrix"] .mx-rain span {
-  writing-mode: vertical-rl;
-  text-orientation: upright;
+  width: 1.2ch;
+  word-break: break-all;
+  text-align: center;
   animation: mx-rain-fall 14s linear infinite;
 }
 [data-theme="matrix"] .mx-rain span:nth-child(2n) {
