@@ -83,23 +83,30 @@ function Gateway({ profile }: { profile?: string }): React.JSX.Element {
   }, [loadConfig]);
 
   // pid / uptime / port for the status card. Local connections only (the
-  // main process returns nulls otherwise); re-read whenever running flips.
+  // main process returns nulls otherwise). Re-read when running flips, when
+  // the gateway restarts (gatewayBusy settles) and every 30s so a restart
+  // outside the app and the uptime both stay current.
   useEffect(() => {
-    if (!gatewayRunning) {
-      setGatewayDetails(null);
+    if (!gatewayRunning || gatewayBusy) {
+      if (!gatewayRunning) setGatewayDetails(null);
       return;
     }
     let cancelled = false;
-    void window.hermesAPI
-      .gatewayInfo?.()
-      .then((info) => {
-        if (!cancelled && info?.running) setGatewayDetails(info);
-      })
-      .catch(() => {});
+    const read = (): void => {
+      void window.hermesAPI
+        .gatewayInfo?.()
+        .then((info) => {
+          if (!cancelled) setGatewayDetails(info?.running ? info : null);
+        })
+        .catch(() => {});
+    };
+    read();
+    const interval = setInterval(read, 30_000);
     return () => {
       cancelled = true;
+      clearInterval(interval);
     };
-  }, [gatewayRunning]);
+  }, [gatewayRunning, gatewayBusy]);
 
   useEffect(() => {
     const interval = setInterval(() => {
