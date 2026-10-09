@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { upsertLiveReasoningChunk } from "../src/renderer/src/screens/Chat/liveReasoningEvents";
+import { reasoningSeconds } from "../src/renderer/src/screens/Chat/HistoryRow";
+import type { ReasoningMessage } from "../src/renderer/src/screens/Chat/types";
 import type { ChatMessage } from "../src/renderer/src/screens/Chat/types";
 
 describe("upsertLiveReasoningChunk", () => {
@@ -139,5 +141,27 @@ describe("upsertLiveReasoningChunk", () => {
       kind: "reasoning",
       text: "after tool",
     });
+  });
+});
+
+describe("live reasoning timing", () => {
+  it("records first and latest chunk time on a live row", () => {
+    const first = upsertLiveReasoningChunk([], "a", 1000);
+    const next = upsertLiveReasoningChunk(first, "b", 5200);
+    expect(next[0]).toMatchObject({ startedAt: 1000, updatedAt: 5200 });
+    expect(reasoningSeconds(next[0] as ReasoningMessage)).toBe(4);
+  });
+
+  it("shows no duration for history rows or sub-second thoughts", () => {
+    const history: ReasoningMessage = {
+      id: "r",
+      kind: "reasoning",
+      role: "agent",
+      text: "x",
+    };
+    expect(reasoningSeconds(history)).toBeNull();
+    expect(
+      reasoningSeconds({ ...history, startedAt: 0, updatedAt: 400 }),
+    ).toBeNull();
   });
 });

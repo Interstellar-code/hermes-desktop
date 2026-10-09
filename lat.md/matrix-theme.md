@@ -15,3 +15,9 @@ The Matrix rules paint the sidebar and status strip opaque, overriding the macOS
 Screens restyled for Matrix Desktop opt into `mx-` building blocks (`mx-btn`, `mx-chip`, `mx-card`, `mx-tabs`/`mx-tab`, `mx-search`, `mx-pill`, `mx-h1`, `mx-page`) defined after the shell rules.
 
 They read only theme tokens (plus optional `--mx-*` accents that fall back to standard tokens), so a screen using them still renders correctly under every theme. Screen-specific CSS lives in a file next to the screen, not in `main.css`.
+
+## Data-backed details
+
+Matrix screens show only values the app can read, so a missing source drops the detail rather than inventing it.
+
+The Gateway status card reads pid, start time (the `gateway.pid` file's mtime) and port from the read-only `gateway-info` IPC, local connections only ([[src/main/hermes.ts#gatewayInfo]]). "Thought · Ns" in Chat comes from the first and last streamed reasoning chunk times recorded by [[src/renderer/src/screens/Chat/liveReasoningEvents.ts#upsertLiveReasoningChunk]]; reasoning loaded from history has no timing and shows no duration. The Home cards ([[src/renderer/src/screens/Chat/HomeCards.tsx#HomeCards]]) render only for sources that loaded.

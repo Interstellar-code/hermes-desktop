@@ -38,6 +38,7 @@ export function upsertLiveReasoningChunk(
     const updated: ReasoningMessage = {
       ...previous,
       text: previous.text + chunk,
+      ...(previous.startedAt !== undefined ? { updatedAt: now } : {}),
     };
     return [
       ...messages.slice(0, insertAt - 1),
@@ -51,6 +52,8 @@ export function upsertLiveReasoningChunk(
     kind: "reasoning",
     role: "agent",
     text: chunk,
+    startedAt: now,
+    updatedAt: now,
   };
   return [...messages.slice(0, insertAt), row, ...messages.slice(insertAt)];
 }

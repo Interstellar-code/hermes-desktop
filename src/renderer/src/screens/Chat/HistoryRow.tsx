@@ -15,6 +15,14 @@ import type {
 
 /* ── Reasoning ────────────────────────────────────────────────────────── */
 
+/** Whole seconds between the first and last streamed chunk, or null when the
+ *  row has no live timing (history) or streamed for under a second. */
+export function reasoningSeconds(msg: ReasoningMessage): number | null {
+  if (msg.startedAt === undefined || msg.updatedAt === undefined) return null;
+  const secs = Math.round((msg.updatedAt - msg.startedAt) / 1000);
+  return secs >= 1 ? secs : null;
+}
+
 export const ReasoningRow = memo(function ReasoningRow({
   msg,
   active = false,
@@ -67,6 +75,12 @@ export const ReasoningRow = memo(function ReasoningRow({
           )}
           <span className="chat-reasoning-group-title">
             {active ? t("chat.thinking") : t("chat.thought")}
+            {!active && reasoningSeconds(msg) !== null && (
+              <span className="chat-reasoning-group-duration">
+                {" "}
+                · {reasoningSeconds(msg)}s
+              </span>
+            )}
           </span>
           <ChevronRight
             size={14}

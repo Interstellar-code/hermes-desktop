@@ -41,6 +41,10 @@ export interface ReasoningMessage {
   kind: "reasoning";
   role: "agent";
   text: string;
+  /** Live streaming only: when the first and latest chunk arrived (ms). Rows
+   *  loaded from history have no timing, so the UI shows no duration. */
+  startedAt?: number;
+  updatedAt?: number;
 }
 
 export interface ToolCallMessage {
