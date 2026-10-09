@@ -17,8 +17,8 @@ export function McpStatusChip({
   }
   return (
     <span className="mx-chip mx-chip--ok">
-      <span aria-hidden="true">●</span>
-      {toolCount} {toolCount === 1 ? "tool" : "tools"}
+      <span aria-hidden="true">●</span> {toolCount}{" "}
+      {toolCount === 1 ? "tool" : "tools"}
     </span>
   );
 }
