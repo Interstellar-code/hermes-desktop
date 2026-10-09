@@ -1,3 +1,5 @@
+import type React from "react";
+
 interface McpStatusChipProps {
   enabled: boolean;
   toolCount: number | undefined;
@@ -6,7 +8,7 @@ interface McpStatusChipProps {
 export function McpStatusChip({
   enabled,
   toolCount,
-}: McpStatusChipProps): JSX.Element {
+}: McpStatusChipProps): React.JSX.Element {
   if (!enabled) {
     return <span className="mx-chip">off</span>;
   }
