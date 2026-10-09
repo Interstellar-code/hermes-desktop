@@ -506,6 +506,13 @@ function Tools({
         );
         return;
       }
+      // Clear stale tool counts before the enabled call: both names need a fresh Test.
+      setMcpToolCounts((prev) => {
+        const next = { ...prev };
+        if (editing) delete next[editing];
+        delete next[input.name];
+        return next;
+      });
       // Apply an enabled change requested via the JSON (add/update carry only
       // the config; the enabled flag is a separate call).
       if (nextEnabled !== undefined && nextEnabled !== editingEnabled) {
@@ -517,14 +524,6 @@ function Tools({
       }
       closeMcpModal();
       setMcpMessage(t(editing ? "tools.mcpUpdated" : "tools.mcpAdded"));
-      // Clear stale tool counts: the old name (on rename) and the new name
-      // (config may have changed) both need a fresh Test.
-      setMcpToolCounts((prev) => {
-        const next = { ...prev };
-        if (editing) delete next[editing];
-        delete next[input.name];
-        return next;
-      });
       await reloadMcp();
     } catch (err) {
       setMcpError(
