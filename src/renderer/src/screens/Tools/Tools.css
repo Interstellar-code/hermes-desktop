@@ -1,0 +1,198 @@
+/* Matrix Capabilities — Tools and MCP tabs.
+ *
+ * main.css keeps ownership of the shared .tools-* / .mcp-* component rules
+ * (this file never edits it). Everything here reshapes those classes for the
+ * Matrix Desktop artboards and adds the few screen-local pieces P0 does not
+ * provide. Colours come from theme tokens only — never a literal hex — so the
+ * screen still renders correctly under every other theme. */
+
+/* ── Page shell ──────────────────────────────────────────────────────────
+ * One scrolling page (like the artboards), so the panes below must not add
+ * their own padding or scroll independently. */
+.tools-screen {
+  gap: 14px;
+}
+
+.tools-pane,
+.tools-skills-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0;
+  overflow: visible;
+  min-height: 0;
+}
+
+.tools-skills-pane .skills-container {
+  height: auto;
+  overflow: visible;
+  padding: 0;
+}
+
+.tools-cap-tabs {
+  align-items: center;
+  padding: 0;
+}
+
+/* The enabled/total summary rides at the end of the tab row (artboard). */
+.tools-tab-summary {
+  margin-left: auto;
+  align-self: center;
+}
+
+/* ── Tools tab ─────────────────────────────────────────────────────────── */
+.tools-toolset-grid {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-tertiary);
+}
+
+/* Icon tile: the artboard's bordered square rather than a filled chip. */
+.tools-toolset-row .tools-card-icon {
+  width: 30px;
+  height: 28px;
+  padding: 5px;
+  border-radius: 5px;
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+  background: none;
+  color: var(--text-secondary);
+}
+
+.tools-card-label {
+  font-weight: 700;
+}
+
+.tools-toolset-info .tools-card-description,
+.tools-toolset-row .tools-card-description {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* A disabled toolset recedes, matching the muted rows in the artboard. */
+.tools-toolset-row.is-off {
+  opacity: 0.55;
+}
+
+/* ── Switch (34x18 track, 14px knob — artboard proportions) ─────────────── */
+.tools-toggle-track {
+  width: 34px;
+  height: 18px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-muted) 25%, transparent);
+}
+
+.tools-toggle-track::after {
+  width: 14px;
+  height: 14px;
+  top: 2px;
+  left: 2px;
+  background: var(--text-muted);
+}
+
+.tools-toggle input:checked + .tools-toggle-track::after {
+  transform: translateX(16px);
+  background: var(--accent-fg, var(--bg-primary));
+}
+
+.tools-toggle input:focus-visible + .tools-toggle-track {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+/* ── MCP tab ───────────────────────────────────────────────────────────── */
+.tools-mcp-search {
+  flex: 1;
+  min-width: 0;
+  max-width: 360px;
+  margin-bottom: 0;
+}
+
+.tools-mcp-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.tools-mcp-actions svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.tools-icon-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* Five columns now: Server · Transport · Status · Command/URL · Enabled. */
+.mcp-table {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-tertiary);
+}
+
+.mcp-thead,
+.mcp-row {
+  grid-template-columns: minmax(140px, 1fr) 88px 118px minmax(0, 2fr) 168px;
+}
+
+.mcp-thead {
+  height: auto;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+}
+
+.mcp-cell-status {
+  justify-content: flex-start;
+}
+
+.mcp-cell-cmd {
+  min-width: 0;
+}
+
+/* Command/URL is code, not prose — mono, clipped, full value on hover. */
+.mcp-cmd {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.mcp-cell-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.mcp-name {
+  font-weight: 700;
+}
+
+.mcp-tfoot {
+  font-size: 10.5px;
+}
+
+@media (max-width: 900px) {
+  .mcp-thead,
+  .mcp-row {
+    grid-template-columns: minmax(0, 1fr) 88px 118px 60px;
+  }
+  /* Command/URL and the header label are the first thing to go on a narrow
+   * window; the toggle keeps its own column. */
+  .mcp-cell-cmd {
+    display: none;
+  }
+  .mcp-thead span:nth-child(4) {
+    display: none;
+  }
+}
