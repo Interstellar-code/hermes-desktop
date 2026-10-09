@@ -54,6 +54,7 @@ describe("selectHomeCards", () => {
         job("later", "2026-10-09T15:00:00Z"),
         job("disabled", "2026-10-09T01:00:00Z", false),
         job("never", null),
+        job("bad-date", "not a date"),
         job("soon", "2026-10-09T07:30:00Z"),
       ],
       null,

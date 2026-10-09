@@ -40,7 +40,13 @@ export function selectHomeCards(
 ): HomeCardsData {
   const latest = sessions?.[0];
   const upcoming = (jobs ?? [])
-    .filter((j) => j.enabled && j.state === "active" && j.next_run_at)
+    .filter(
+      (j) =>
+        j.enabled &&
+        j.state === "active" &&
+        j.next_run_at &&
+        !Number.isNaN(new Date(j.next_run_at).getTime()),
+    )
     .sort(
       (a, b) =>
         new Date(a.next_run_at as string).getTime() -
@@ -79,6 +85,15 @@ function formatTime(value: number | string): string {
   });
 }
 
+// Home mounts on every new chat; reuse a recent load instead of re-running the
+// cron/kanban CLIs (slow over SSH) each time.
+const CACHE_MS = 60_000;
+let cache: {
+  profile: string | undefined;
+  at: number;
+  data: HomeCardsData;
+} | null = null;
+
 function goTo(view: string): void {
   window.dispatchEvent(new CustomEvent("navigation:goto", { detail: view }));
 }
@@ -93,9 +108,21 @@ export function HomeCards({
 }: {
   profile?: string;
 }): React.JSX.Element | null {
-  const [data, setData] = useState<HomeCardsData | null>(null);
+  const [data, setData] = useState<HomeCardsData | null>(() =>
+    cache && cache.profile === profile && Date.now() - cache.at < CACHE_MS
+      ? cache.data
+      : null,
+  );
 
   useEffect(() => {
+    if (
+      cache &&
+      cache.profile === profile &&
+      Date.now() - cache.at < CACHE_MS
+    ) {
+      setData(cache.data);
+      return;
+    }
     let cancelled = false;
     const api = window.hermesAPI;
     void Promise.allSettled([
@@ -103,14 +130,13 @@ export function HomeCards({
       api.listCronJobs(false, profile),
       api.kanbanListTasks({ status: "todo", profile }),
     ]).then(([s, j, k]) => {
-      if (cancelled) return;
-      setData(
-        selectHomeCards(
-          s.status === "fulfilled" ? s.value : null,
-          j.status === "fulfilled" ? j.value : null,
-          k.status === "fulfilled" ? k.value : null,
-        ),
+      const next = selectHomeCards(
+        s.status === "fulfilled" ? s.value : null,
+        j.status === "fulfilled" ? j.value : null,
+        k.status === "fulfilled" ? k.value : null,
       );
+      cache = { profile, at: Date.now(), data: next };
+      if (!cancelled) setData(next);
     });
     return () => {
       cancelled = true;
@@ -134,7 +160,9 @@ export function HomeCards({
           }
         >
           <span className="mx-meta">CONTINUE</span>
-          <b className="home-card-title">{continueSession.title}</b>
+          <b className="home-card-title" title={continueSession.title}>
+            {continueSession.title}
+          </b>
           <span className="mx-meta">
             {continueSession.messageCount} msgs ·{" "}
             {formatTime(continueSession.at)}
@@ -150,7 +178,9 @@ export function HomeCards({
           <span className="mx-meta home-card-label">
             NEXT RUN · {formatTime(nextRun.at)}
           </span>
-          <b className="home-card-title">{nextRun.name}</b>
+          <b className="home-card-title" title={nextRun.name}>
+            {nextRun.name}
+          </b>
           <span className="mx-meta">cron · {nextRun.schedule}</span>
         </button>
       )}
