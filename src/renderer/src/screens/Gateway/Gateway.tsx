@@ -23,6 +23,7 @@ import type {
   MessagingPlatformTestResponse,
   MessagingToolsetInfo,
 } from "../../../../shared/messaging-platforms";
+import "./Gateway.css";
 
 type DraftValues = Record<string, Record<string, string>>;
 type PlatformMessage = Record<string, MessagingPlatformTestResponse | null>;
@@ -343,25 +344,35 @@ function Gateway({ profile }: { profile?: string }): React.JSX.Element {
   }
 
   return (
-    <div className="settings-container gateway-management">
-      <div className="gateway-page-header">
+    <div className="settings-container mx-page mx-gateway gateway-management">
+      <div className="gateway-page-header mx-page-header">
         <div>
-          <h1 className="settings-header">{t("gateway.title")}</h1>
-          <p className="gateway-page-subtitle">{t("gateway.subtitle")}</p>
+          <h1 className="mx-h1">{t("gateway.title")}</h1>
+          <p className="gateway-page-subtitle mx-sub">
+            {t("gateway.subtitle")}
+            {profile && (
+              <span className="mx-chip mx-profile-chip">
+                Profile: {profile}
+              </span>
+            )}
+          </p>
         </div>
         <button
-          className="btn btn-secondary btn-sm"
+          type="button"
+          className="mx-btn mx-btn--ghost"
           onClick={() => void loadConfig()}
           title={t("gateway.refreshTooltip")}
         >
-          <RefreshCw size={16} />
+          <RefreshCw size={14} />
           {t("gateway.refresh")}
         </button>
       </div>
 
       <div className="settings-section gateway-overview">
         <div className="settings-field">
-          <label className="settings-field-label">{t("gateway.status")}</label>
+          <label className="settings-field-label mx-card-label">
+            {t("gateway.status")}
+          </label>
           <div className="settings-gateway-row">
             <span
               className={`settings-gateway-status ${gatewayRunning ? "running" : "stopped"}`}
@@ -369,7 +380,8 @@ function Gateway({ profile }: { profile?: string }): React.JSX.Element {
               {gatewayRunning ? t("gateway.running") : t("gateway.stopped")}
             </span>
             <button
-              className="btn btn-secondary btn-sm"
+              type="button"
+              className="mx-btn mx-btn--ghost mx-btn--sm"
               onClick={() => void toggleGateway()}
               disabled={gatewayBusy}
             >
@@ -381,7 +393,8 @@ function Gateway({ profile }: { profile?: string }): React.JSX.Element {
             </button>
             {gatewayRunning && (
               <button
-                className="btn btn-secondary btn-sm"
+                type="button"
+                className="mx-btn mx-btn--sm"
                 onClick={() => void restartGateway()}
                 disabled={gatewayBusy}
               >
@@ -396,46 +409,26 @@ function Gateway({ profile }: { profile?: string }): React.JSX.Element {
           )}
           <div className="settings-field-hint">{t("gateway.configHint")}</div>
         </div>
-        {catalog?.message && (
-          <div className="gateway-inline-warning">{catalog.message}</div>
-        )}
-        {loadError && <div className="gateway-inline-warning">{loadError}</div>}
-      </div>
-
-      {apiKeyStatus && (
-        <div className="settings-section gateway-api-key-section">
-          <div className="settings-field">
-            <label className="settings-field-label">
+        {apiKeyStatus && (
+          <div className="settings-field gateway-api-key-section">
+            <label className="settings-field-label mx-card-label">
               {t("gateway.apiServerKey.title")}
             </label>
             <div className="settings-gateway-row">
               {apiKeyStatus.hasKey ? (
-                <span
-                  className="settings-gateway-status running"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                  }}
-                >
-                  <CheckCircle2 size={14} />
+                <span className="settings-gateway-status running">
+                  <CheckCircle2 size={13} />
                   {t("gateway.apiServerKey.configured")}
                 </span>
               ) : (
-                <span
-                  className="settings-gateway-status stopped"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                  }}
-                >
-                  <AlertTriangle size={14} />
+                <span className="settings-gateway-status stopped">
+                  <AlertTriangle size={13} />
                   {t("gateway.apiServerKey.missing")}
                 </span>
               )}
               <button
-                className="btn btn-secondary btn-sm"
+                type="button"
+                className="mx-btn mx-btn--ghost mx-btn--sm"
                 onClick={async () => {
                   setGeneratingKey(true);
                   try {
@@ -460,22 +453,28 @@ function Gateway({ profile }: { profile?: string }): React.JSX.Element {
               {t("gateway.apiServerKey.generateHint")}
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {catalog?.message && (
+          <div className="gateway-inline-warning">{catalog.message}</div>
+        )}
+        {loadError && <div className="gateway-inline-warning">{loadError}</div>}
+      </div>
 
       <div className="gateway-toolbar">
-        <div className="gateway-search">
-          <Search size={18} />
+        <div className="gateway-search mx-search">
+          <Search size={16} />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={t("gateway.searchPlaceholder")}
+            aria-label={t("gateway.searchPlaceholder")}
           />
         </div>
       </div>
 
       <div className="settings-section gateway-platform-section">
-        <div className="settings-section-title">{t("gateway.platforms")}</div>
+        <h2 className="mx-section-label">{t("gateway.platforms")}</h2>
         <div className="gateway-platform-grid">
           {filteredPlatforms.map((platform) => (
             <PlatformCard

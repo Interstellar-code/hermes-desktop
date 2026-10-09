@@ -21,13 +21,21 @@ export function MemoryTabs({
   ];
 
   return (
-    <div className="memory-tabs">
+    <div
+      className="memory-tabs mx-tabs"
+      role="tablist"
+      aria-label={t("memory.title")}
+    >
       {tabs.map((tab) => {
         const Icon = tab.icon;
+        const selected = activeTab === tab.id;
         return (
           <button
             key={tab.id}
-            className={`memory-tab ${activeTab === tab.id ? "active" : ""}`}
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            className={`memory-tab mx-tab ${selected ? "active" : ""}`}
             onClick={() => onTabChange(tab.id)}
           >
             <Icon size={14} />

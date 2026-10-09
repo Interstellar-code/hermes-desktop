@@ -37,29 +37,17 @@ export function MemoryProfile({
   }
 
   return (
-    <div className="memory-profile">
+    <div className="memory-profile mx-memory">
       <div className="memory-profile-header">
-        <span className="memory-profile-hint">
+        <span className="memory-profile-hint mx-sub">
           {t("memory.userProfileHint")}
         </span>
         {userSaved && (
-          <span
-            style={{
-              color: "var(--success)",
-              fontSize: 12,
-              fontWeight: 600,
-            }}
-          >
-            {t("common.saved")}
-          </span>
+          <span className="mx-chip mx-chip--ok">{t("common.saved")}</span>
         )}
       </div>
 
-      {error && (
-        <div className="memory-error" style={{ marginBottom: 12 }}>
-          {error}
-        </div>
-      )}
+      {error && <div className="memory-error">{error}</div>}
 
       <textarea
         className="memory-profile-textarea"
@@ -69,15 +57,20 @@ export function MemoryProfile({
           setUserEditing(true);
         }}
         placeholder={t("memory.userProfilePlaceholder")}
+        aria-label={t("memory.userProfile")}
         rows={8}
       />
       <div className="memory-profile-footer">
-        <span className="memory-entry-chars">
+        <span className="memory-entry-chars mx-meta">
           {t("memory.chars", { count: userContent.length })} / {charLimit}{" "}
           {t("memory.chars", { count: 1 }).split(" ")[1]}
         </span>
         {userEditing && (
-          <button className="btn btn-primary btn-sm" onClick={handleSave}>
+          <button
+            type="button"
+            className="mx-btn mx-btn--primary"
+            onClick={handleSave}
+          >
             {t("memory.saveProfile")}
           </button>
         )}

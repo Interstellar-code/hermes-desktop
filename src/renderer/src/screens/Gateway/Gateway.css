@@ -1,0 +1,280 @@
+/* Matrix Desktop — Gateway screen. Token-only rules scoped under `.mx-gateway`
+   so they apply under every theme without touching main.css. */
+
+.mx-gateway {
+  gap: 12px;
+}
+
+.mx-gateway .gateway-page-header {
+  margin-bottom: 0;
+}
+
+.mx-gateway .gateway-page-subtitle {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin: 4px 0 0;
+}
+
+.mx-gateway .mx-profile-chip {
+  margin-left: 8px;
+}
+
+/* ----- Status + API key cards ----- */
+.mx-gateway .gateway-overview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: stretch;
+  background: none;
+  padding: 0;
+  margin-bottom: 0;
+}
+
+.mx-gateway .gateway-overview .settings-field,
+.mx-gateway .gateway-api-key-section {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-tertiary);
+}
+
+.mx-gateway .gateway-inline-warning {
+  grid-column: 1 / -1;
+}
+
+.mx-gateway .mx-card-label {
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.mx-gateway .settings-field-label.mx-card-label {
+  margin-bottom: 0;
+}
+
+.mx-gateway .settings-gateway-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.mx-gateway .settings-gateway-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  background: none;
+  border: 1px solid;
+}
+
+.mx-gateway .settings-gateway-status::before {
+  display: none;
+}
+
+.mx-gateway .settings-gateway-status.running {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 60%, transparent);
+  background: none;
+}
+
+.mx-gateway .settings-gateway-status.stopped {
+  color: var(--text-muted);
+  border-color: color-mix(in srgb, var(--text-muted) 45%, transparent);
+  background: none;
+}
+
+.mx-gateway .settings-field-hint {
+  font-size: 10.5px;
+  margin-top: 0;
+}
+
+.mx-gateway .settings-gateway-error,
+.mx-gateway .gateway-inline-warning {
+  max-width: none;
+  font-size: 10.5px;
+  border-radius: 5px;
+  background: var(--warning-bg);
+  border-color: color-mix(in srgb, var(--warning) 45%, transparent);
+}
+
+.mx-gateway .gateway-api-key-mask {
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+/* ----- Search + platforms section ----- */
+.mx-gateway .gateway-toolbar {
+  margin: 0;
+}
+
+.mx-gateway .gateway-search {
+  min-height: 0;
+  padding: 8px 11px;
+  border: 1px solid var(--border-bright);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+}
+
+.mx-gateway .gateway-search:focus-within {
+  border-color: var(--accent);
+  box-shadow: none;
+}
+
+.mx-gateway .gateway-search input {
+  font-size: 12px;
+}
+
+.mx-gateway .mx-section-label {
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin: 0;
+}
+
+.mx-gateway .gateway-platform-grid {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.mx-gateway .gateway-platform-card:hover,
+.mx-gateway .gateway-platform-card:focus-within {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+.mx-gateway .gateway-platform-card + .gateway-platform-card {
+  border-top-color: var(--border);
+}
+
+.mx-gateway .settings-platform-label {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.mx-gateway .settings-platform-desc {
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.mx-gateway .gateway-state-pill {
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  background: none;
+  border: 1px solid;
+}
+
+.mx-gateway .gateway-state-pill.ok {
+  color: var(--success);
+  background: none;
+  border-color: color-mix(in srgb, var(--success) 60%, transparent);
+}
+
+.mx-gateway .gateway-state-pill.warn {
+  color: var(--warning);
+  background: none;
+  border-color: color-mix(in srgb, var(--warning) 60%, transparent);
+}
+
+.mx-gateway .gateway-state-pill.error {
+  color: var(--error);
+  background: none;
+  border-color: color-mix(in srgb, var(--error) 60%, transparent);
+}
+
+.mx-gateway .gateway-state-pill.muted {
+  color: var(--text-muted);
+  background: none;
+  border-color: color-mix(in srgb, var(--text-muted) 45%, transparent);
+}
+
+.mx-gateway .gateway-platform-actions {
+  /* Always visible: hover-revealed actions are unreachable by touch and easy
+     to miss. */
+  margin-top: 8px;
+  max-height: none;
+  opacity: 1;
+  overflow: visible;
+}
+
+.mx-gateway .gateway-icon-action {
+  color: var(--text-muted);
+  border-color: color-mix(in srgb, var(--text-primary) 18%, transparent);
+  background: none;
+}
+
+.mx-gateway .gateway-icon-action:hover:not(:disabled) {
+  color: var(--text-primary);
+  background: none;
+}
+
+.mx-gateway .gateway-unsaved-hint,
+.mx-gateway .gateway-advanced-badge,
+.mx-gateway .gateway-risk-pill,
+.mx-gateway .gateway-required-dot {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+.mx-gateway .gateway-test-message {
+  font-size: 10.5px;
+  border-radius: 5px;
+}
+
+.mx-gateway .gateway-empty-state {
+  font-size: 11.5px;
+}
+
+/* ----- Configure modal ----- */
+.mx-gateway .gateway-modal {
+  border: 1px solid var(--border-bright);
+  border-radius: 10px;
+  background: var(--bg-tertiary);
+}
+
+.mx-gateway .gateway-modal-header {
+  border-bottom: 1px solid var(--border);
+}
+
+.mx-gateway .gateway-detail-heading {
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+}
+
+.mx-gateway .gateway-section-heading-row {
+  border: 0;
+  padding: 0;
+  margin-bottom: 10px;
+}
+
+.mx-gateway .gateway-modal-section {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.mx-gateway .gateway-field-label code {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.mx-gateway .gateway-capability-row {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+}

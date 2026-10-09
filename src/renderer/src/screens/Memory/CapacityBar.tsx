@@ -14,10 +14,13 @@ export function CapacityBar({
     pct > 90 ? "var(--error)" : pct > 70 ? "var(--warning)" : "var(--success)";
   return (
     <div className="memory-capacity">
-      <div className="memory-capacity-header">
+      <div className="memory-capacity-header mx-capacity-meter">
         {label && <span className="memory-capacity-label">{label}</span>}
-        <span className="memory-capacity-value">
-          {used.toLocaleString()} / {limit.toLocaleString()} chars ({pct}%)
+        <span className="memory-capacity-value mx-meta">
+          {used.toLocaleString()} / {limit.toLocaleString()} chars
+        </span>
+        <span className="mx-capacity-pct" style={{ color }}>
+          {pct}%{pct > 90 ? " · near limit" : ""}
         </span>
       </div>
       <div className="memory-capacity-track">

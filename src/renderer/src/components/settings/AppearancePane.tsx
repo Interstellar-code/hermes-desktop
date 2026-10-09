@@ -179,7 +179,7 @@ export default function AppearancePane(): React.JSX.Element {
       </div>
 
       {gpuSaveError && (
-        <div className="settings-field-hint" style={{ color: "#ef4444" }}>
+        <div className="settings-field-hint" style={{ color: "var(--error)" }}>
           {t("settings.hardwareAcceleration.saveFailed")}
         </div>
       )}

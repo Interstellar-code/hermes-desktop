@@ -1,10 +1,16 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Refresh } from "../../assets/icons";
 import { useI18n } from "../../components/useI18n";
 import { OrbLoader } from "../../components/OrbLoader";
+import "./Soul.css";
 
 interface SoulProps {
   profile?: string;
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  return `${(bytes / 1024).toFixed(1)} KB`;
 }
 
 function Soul({ profile }: SoulProps): React.JSX.Element {
@@ -52,6 +58,11 @@ function Soul({ profile }: SoulProps): React.JSX.Element {
     };
   }, [content, saveSoul]);
 
+  const size = useMemo(
+    () => formatBytes(new TextEncoder().encode(content).length),
+    [content],
+  );
+
   async function handleReset(): Promise<void> {
     const newContent = await window.hermesAPI.resetSoul(profile);
     loaded.current = false;
@@ -66,7 +77,7 @@ function Soul({ profile }: SoulProps): React.JSX.Element {
 
   if (loading) {
     return (
-      <div className="soul-container">
+      <div className="soul-container mx-soul">
         <div className="soul-loading">
           <OrbLoader state="searching" size={64} />
         </div>
@@ -75,17 +86,15 @@ function Soul({ profile }: SoulProps): React.JSX.Element {
   }
 
   return (
-    <div className="soul-container">
+    <div className="soul-container mx-soul">
       <div className="soul-header">
         <div>
-          <h2 className="soul-title">
-            {t("soul.title")}
-            {saved && <span className="soul-saved">{t("common.saved")}</span>}
-          </h2>
+          <h2 className="soul-title">{t("soul.title")}</h2>
           <p className="soul-subtitle">{t("soul.subtitle")}</p>
         </div>
         <button
-          className="btn btn-secondary btn-sm"
+          type="button"
+          className="mx-btn mx-btn--ghost"
           onClick={() => setShowReset(true)}
           title={t("soul.resetTitle")}
         >
@@ -94,15 +103,28 @@ function Soul({ profile }: SoulProps): React.JSX.Element {
         </button>
       </div>
 
+      <div className="mx-soul-meta">
+        <span className="mx-chip mx-soul-path">SOUL.md</span>
+        <span className="mx-chip">{size}</span>
+        {saved && (
+          <span className="mx-chip mx-chip--ok">{t("common.saved")}</span>
+        )}
+      </div>
+
       {showReset && (
         <div className="soul-reset-confirm">
           <span>{t("soul.resetConfirm")}</span>
           <div className="soul-reset-actions">
-            <button className="btn btn-primary btn-sm" onClick={handleReset}>
+            <button
+              type="button"
+              className="mx-btn mx-btn--primary mx-btn--sm"
+              onClick={handleReset}
+            >
               {t("soul.reset")}
             </button>
             <button
-              className="btn btn-secondary btn-sm"
+              type="button"
+              className="mx-btn mx-btn--ghost mx-btn--sm"
               onClick={() => setShowReset(false)}
             >
               {t("common.cancel")}
@@ -116,10 +138,13 @@ function Soul({ profile }: SoulProps): React.JSX.Element {
         value={content}
         onChange={(e) => setContent(e.target.value)}
         placeholder={t("soul.placeholder")}
+        aria-label="SOUL.md"
         spellCheck={false}
       />
 
-      <div className="soul-hint">{t("soul.hint")}</div>
+      <div className="mx-soul-footer">
+        <span className="soul-hint">{t("soul.hint")}</span>
+      </div>
     </div>
   );
 }

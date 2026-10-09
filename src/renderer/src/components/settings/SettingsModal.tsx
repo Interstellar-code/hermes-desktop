@@ -24,6 +24,7 @@ import AboutPane from "./AboutPane";
 import CommunityPane from "./CommunityPane";
 import LogsPane from "./LogsPane";
 import NotificationsPane from "./NotificationsPane";
+import "./Settings.css";
 
 export type SettingsSection =
   | "appearance"
@@ -150,7 +151,7 @@ export default function SettingsModal({
         if (!nextOpen) onClose();
       }}
       onExitComplete={onExited}
-      className="settings-modal"
+      className="settings-modal mx-settings"
       overlayClassName="settings-modal-overlay"
       labelledBy="settings-modal-title"
     >
