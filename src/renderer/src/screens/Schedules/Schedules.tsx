@@ -11,6 +11,7 @@ import {
 } from "../../assets/icons";
 import { useI18n } from "../../components/useI18n";
 import { OrbLoader } from "../../components/OrbLoader";
+import "./Schedules.css";
 
 const DELIVER_TARGETS = [
   { value: "local", label: "Local" },
@@ -54,6 +55,43 @@ interface SchedulesProps {
   profile?: string;
 }
 
+// Cron day-of-week index (0=Sunday … 6=Saturday) → schedules.<key> i18n key.
+const DAY_KEYS = [
+  "sunday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+];
+
+// Presentation-only humanizing of a cron/shorthand schedule ("0 15 * * *"
+// → "daily 15:00", "30 7 * * 1" → "Monday 07:30", "30m" → "every 30 min").
+// Returns "" unless minute and hour are plain integers and day-of-week is
+// "*" or a single integer 0–6, with day-of-month and month "*" — anything
+// else (steps, ranges, lists, wildcards) would render invented text.
+export function humanSchedule(
+  expr: string,
+  dayName: (key: string) => string = (key) =>
+    key.charAt(0).toUpperCase() + key.slice(1),
+): string {
+  const s = expr.trim();
+  let m = /^(\d+)m$/i.exec(s);
+  if (m) return `every ${m[1]} min`;
+  m = /^(\d+)h$/i.exec(s);
+  if (m) return `every ${m[1]} h`;
+  const fields = s.split(/\s+/);
+  if (fields.length !== 5) return "";
+  const [min, hour, dom, mon, dow] = fields;
+  if (dom !== "*" || mon !== "*") return "";
+  if (!/^\d+$/.test(min) || !/^\d+$/.test(hour)) return "";
+  const time = `${hour.padStart(2, "0")}:${min.padStart(2, "0")}`;
+  if (dow === "*") return `daily ${time}`;
+  if (!/^\d$/.test(dow) || parseInt(dow, 10) > 6) return "";
+  return `${dayName(DAY_KEYS[parseInt(dow, 10)] ?? "")} ${time}`;
+}
+
 function Schedules({ profile }: SchedulesProps): React.JSX.Element {
   const { t } = useI18n();
   const [jobs, setJobs] = useState<CronJob[]>([]);
@@ -76,6 +114,11 @@ function Schedules({ profile }: SchedulesProps): React.JSX.Element {
   const [weeklyDay, setWeeklyDay] = useState("1");
   const [weeklyTime, setWeeklyTime] = useState("09:00");
   const [customCron, setCustomCron] = useState("");
+
+  const totalJobs = jobs.length;
+  const activeCount = jobs.filter((j) => j.state === "active").length;
+  const pausedCount = jobs.filter((j) => j.state === "paused").length;
+  const completedCount = jobs.filter((j) => j.state === "completed").length;
 
   const loadJobs = useCallback(async (): Promise<void> => {
     try {
@@ -247,7 +290,7 @@ function Schedules({ profile }: SchedulesProps): React.JSX.Element {
 
   if (loading) {
     return (
-      <div className="schedules-container">
+      <div className="mxs-root">
         <div className="schedules-loading">
           <OrbLoader state="searching" size={64} />
         </div>
@@ -256,7 +299,7 @@ function Schedules({ profile }: SchedulesProps): React.JSX.Element {
   }
 
   return (
-    <div className="schedules-container">
+    <div className="mxs-root">
       {/* Create Modal */}
       {showCreate && (
         <div className="skills-detail-overlay" onClick={closeCreateModal}>
@@ -511,30 +554,37 @@ function Schedules({ profile }: SchedulesProps): React.JSX.Element {
         </div>
       )}
 
-      <div className="schedules-header">
+      <div className="mxs-header">
         <div>
-          <h2 className="schedules-title">{t("schedules.title")}</h2>
-          <p className="schedules-subtitle">{t("schedules.subtitle")}</p>
+          <h1 className="mx-h1 mxs-h1">{t("schedules.title")}</h1>
+          <p className="mx-sub">
+            {totalJobs} jobs · {activeCount} active · {pausedCount} paused
+            {completedCount > 0 ? ` · ${completedCount} completed` : ""}
+          </p>
         </div>
-        <div className="schedules-header-actions">
-          <button className="btn btn-secondary" onClick={loadJobs}>
-            <Refresh size={14} />
+        <div className="mxs-actions">
+          <button className="mx-btn mx-btn--ghost mxs-btn" onClick={loadJobs}>
+            <Refresh size={12} />
             {t("schedules.refresh")}
           </button>
           <button
-            className="btn btn-primary"
+            className="mx-btn mx-btn--primary mxs-btn"
             onClick={() => setShowCreate(true)}
           >
-            <Plus size={14} />
+            <Plus size={12} />
             {t("schedules.newTask")}
           </button>
         </div>
       </div>
 
       {error && (
-        <div className="skills-error">
-          {error}
-          <button className="btn-ghost" onClick={() => setError("")}>
+        <div className="mxs-error">
+          <span>{error}</span>
+          <button
+            className="mxs-error-dismiss"
+            aria-label={t("common.dismiss")}
+            onClick={() => setError("")}
+          >
             <X size={14} />
           </button>
         </div>
@@ -554,105 +604,132 @@ function Schedules({ profile }: SchedulesProps): React.JSX.Element {
           </button>
         </div>
       ) : (
-        <div className="schedules-list">
-          {jobs.map((job) => (
-            <div key={job.id} className="schedules-card">
-              <div className="schedules-card-top">
-                <div className="schedules-card-info">
-                  <div className="schedules-card-name">{job.name}</div>
-                  <div className="schedules-card-schedule">{job.schedule}</div>
-                </div>
-                <div className="schedules-card-actions">
-                  <span
-                    className={`schedules-badge schedules-badge-${job.state}`}
-                  >
-                    {job.state === "active"
-                      ? t("schedules.active")
-                      : job.state === "paused"
-                        ? t("schedules.paused")
-                        : t("schedules.completed")}
-                  </span>
-                  {job.state !== "completed" && (
-                    <button
-                      className="btn-ghost schedules-action-btn"
-                      data-tooltip={
-                        job.state === "paused"
-                          ? t("schedules.resume")
-                          : t("schedules.pause")
-                      }
-                      onClick={() => handleToggle(job)}
-                      disabled={actionInProgress === job.id}
-                    >
-                      {job.state === "paused" ? (
-                        <Play size={14} />
-                      ) : (
-                        <Pause size={14} />
-                      )}
-                    </button>
-                  )}
-                  {job.state === "active" && (
-                    <button
-                      className="btn-ghost schedules-action-btn"
-                      data-tooltip={t("schedules.triggerNow")}
-                      onClick={() => handleTrigger(job.id)}
-                      disabled={actionInProgress === job.id}
-                    >
-                      <Zap size={14} />
-                    </button>
-                  )}
-                  <button
-                    className="btn-ghost schedules-action-btn schedules-action-danger"
-                    data-tooltip={t("schedules.delete")}
-                    onClick={() => setConfirmDelete(job.id)}
-                    disabled={actionInProgress === job.id}
-                  >
-                    <Trash size={14} />
-                  </button>
-                </div>
-              </div>
-
-              {job.prompt && (
-                <div className="schedules-card-prompt">{job.prompt}</div>
-              )}
-
-              <div className="schedules-card-meta">
-                <span>
-                  {t("schedules.nextRun")}: {formatTime(job.next_run_at)}
-                </span>
-                {job.last_run_at && (
-                  <span>
-                    {t("schedules.lastRun")}: {formatTime(job.last_run_at)}
-                    {job.last_status && job.last_status !== "ok" && (
-                      <span className="schedules-card-error-icon">
-                        <Alert size={12} />
-                      </span>
+        <div className="mxs-list">
+          {jobs.map((job) => {
+            const human = humanSchedule(job.schedule, (key) =>
+              t(`schedules.${key}`),
+            );
+            const stateChip =
+              job.state === "active"
+                ? "mx-chip mx-chip--ok"
+                : job.state === "paused"
+                  ? "mx-chip mx-chip--warn"
+                  : "mx-chip";
+            const stateLabel =
+              job.state === "active"
+                ? t("schedules.active")
+                : job.state === "paused"
+                  ? t("schedules.paused")
+                  : t("schedules.completed");
+            const toggleLabel =
+              job.state === "paused"
+                ? t("schedules.resume")
+                : t("schedules.pause");
+            return (
+              <article
+                key={job.id}
+                className={`mx-card mxs-row${
+                  job.state === "paused" ? " mxs-row--paused" : ""
+                }`}
+              >
+                <div className="mxs-row-top">
+                  <div className="mxs-row-name">
+                    <b className="mxs-name">{job.name}</b>
+                    <code className="mxs-cron">{job.schedule}</code>
+                    {human && <span className="mx-meta">{human}</span>}
+                  </div>
+                  <div className="mxs-row-actions">
+                    <span className={`${stateChip} mxs-state`}>
+                      {stateLabel}
+                    </span>
+                    {job.state !== "completed" && (
+                      <button
+                        type="button"
+                        className="mx-icon-btn"
+                        aria-label={toggleLabel}
+                        title={toggleLabel}
+                        onClick={() => handleToggle(job)}
+                        disabled={actionInProgress === job.id}
+                      >
+                        {job.state === "paused" ? (
+                          <Play size={12} />
+                        ) : (
+                          <Pause size={12} />
+                        )}
+                      </button>
                     )}
-                  </span>
-                )}
-                {job.repeat && job.repeat.times && (
+                    {job.state === "active" && (
+                      <button
+                        type="button"
+                        className="mx-icon-btn"
+                        aria-label={t("schedules.triggerNow")}
+                        title={t("schedules.triggerNow")}
+                        onClick={() => handleTrigger(job.id)}
+                        disabled={actionInProgress === job.id}
+                      >
+                        <Zap size={12} />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="mx-icon-btn"
+                      aria-label={t("schedules.delete")}
+                      title={t("schedules.delete")}
+                      onClick={() => setConfirmDelete(job.id)}
+                      disabled={actionInProgress === job.id}
+                    >
+                      <Trash size={12} />
+                    </button>
+                  </div>
+                </div>
+
+                {job.prompt && <p className="mxs-prompt">{job.prompt}</p>}
+
+                <div className="mx-meta mxs-row-meta">
                   <span>
-                    {t("schedules.runCount")}: {job.repeat.completed}/
-                    {job.repeat.times}
+                    {t("schedules.nextRun")}{" "}
+                    <b className="mxs-time">{formatTime(job.next_run_at)}</b>
                   </span>
-                )}
-                {job.deliver.length > 0 &&
-                  !(job.deliver.length === 1 && job.deliver[0] === "local") && (
+                  {job.last_run_at && (
                     <span>
-                      {t("schedules.deliveredTo")}: {job.deliver.join(", ")}
+                      {t("schedules.lastRun")} {formatTime(job.last_run_at)}
+                      {job.last_status === "ok" && (
+                        <span className="mxs-ok" role="img" aria-label="ok">
+                          {" "}
+                          ✓
+                        </span>
+                      )}
+                      {job.last_status && job.last_status !== "ok" && (
+                        <span className="mxs-err-icon">
+                          {" "}
+                          <Alert size={12} />
+                        </span>
+                      )}
                     </span>
                   )}
-                {job.skills.length > 0 && (
-                  <span>
-                    {t("schedules.skills")}: {job.skills.join(", ")}
-                  </span>
-                )}
-              </div>
+                  {job.repeat && job.repeat.times && (
+                    <span>
+                      {t("schedules.runCount")}: {job.repeat.completed}/
+                      {job.repeat.times}
+                    </span>
+                  )}
+                  {job.deliver.length > 0 &&
+                    !(
+                      job.deliver.length === 1 && job.deliver[0] === "local"
+                    ) && <span>→ {job.deliver.join(", ")}</span>}
+                  {job.skills.length > 0 && (
+                    <span>
+                      {t("schedules.skills")}: {job.skills.join(", ")}
+                    </span>
+                  )}
+                </div>
 
-              {job.last_error && (
-                <div className="schedules-card-error">{job.last_error}</div>
-              )}
-            </div>
-          ))}
+                {job.last_error && (
+                  <div className="mxs-error-text">{job.last_error}</div>
+                )}
+              </article>
+            );
+          })}
         </div>
       )}
     </div>

@@ -13,6 +13,7 @@ import {
 } from "../../assets/icons";
 import { useI18n } from "../../components/useI18n";
 import { OrbLoader } from "../../components/OrbLoader";
+import "./Kanban.css";
 
 interface KanbanProps {
   profile?: string;
@@ -203,6 +204,22 @@ function priorityTone(p: number): string {
   if (p >= 5) return "p1";
   if (p > 0) return "p2";
   return "";
+}
+
+// Priority chip tone: p0=error, p1=warn, p2=info (artboard's chip colors).
+function prioChipClass(p: number): string {
+  const tone = priorityTone(p);
+  if (tone === "p0") return "mx-chip mx-chip--error";
+  if (tone === "p1") return "mx-chip mx-chip--warn";
+  if (tone === "p2") return "mx-chip mx-chip--info";
+  return "mx-chip";
+}
+
+// Artboard empty-column wording; literal — no i18n keys exist for these.
+function columnEmptyLabel(key: string): string {
+  if (key === "triage") return "Nothing to triage";
+  if (key === "ready") return "Drop a card here to dispatch";
+  return "—";
 }
 
 // 1–2 char avatar initials for an assignee profile name (JIRA-style chip).
@@ -688,26 +705,27 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
   }
 
   return (
-    <div className="kanban-container">
-      <div className="kanban-header">
+    <div className="mxk-root">
+      <div className="mxk-header">
         <div>
-          <h2 className="schedules-title">{t("kanban.title")}</h2>
+          <h1 className="mx-h1 mxk-h1">{t("kanban.title")}</h1>
+          <p className="mx-sub">{t("kanban.subtitle")}</p>
         </div>
-        <div className="schedules-header-actions">
+        <div className="mxk-actions">
           <button
-            className="btn btn-secondary"
+            className="mx-btn mx-btn--ghost mxk-btn"
             onClick={() => loadAll()}
             disabled={actionBusy !== null}
             data-tooltip={t("kanban.refreshTooltip")}
           >
-            <Refresh size={14} />
+            <Refresh size={12} />
             {t("kanban.refresh")}
           </button>
           {!isHqActive && (
             <>
               <button
-                className={`btn btn-secondary${
-                  showArchived ? " kanban-toggle-active" : ""
+                className={`mx-btn mx-btn--ghost mxk-btn${
+                  showArchived ? " mxk-btn-on" : ""
                 }`}
                 onClick={() => setShowArchived((v) => !v)}
                 disabled={actionBusy !== null}
@@ -718,20 +736,20 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
                   : t("kanban.showArchived")}
               </button>
               <button
-                className="btn btn-secondary"
+                className="mx-btn mxk-btn"
                 onClick={handleDispatch}
                 disabled={actionBusy !== null}
                 data-tooltip={t("kanban.dispatchTooltip")}
               >
-                <Zap size={14} />
+                <Zap size={12} />
                 {t("kanban.dispatch")}
               </button>
               <button
-                className="btn btn-primary"
+                className="mx-btn mx-btn--primary mxk-btn"
                 onClick={() => setShowCreate(true)}
                 data-tooltip={t("kanban.newTaskTooltip")}
               >
-                <Plus size={14} />
+                <Plus size={12} />
                 {t("kanban.newTask")}
               </button>
             </>
@@ -740,45 +758,51 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
       </div>
 
       {(boards.length > 0 || hqAvailable) && (
-        <div className="kanban-boards-bar">
-          {boards.map((b) => {
-            const active = isHqActive ? false : b.is_current;
-            return (
+        <div className="mxk-boards-row">
+          <div className="mxk-boards" role="tablist" aria-label="Boards">
+            {boards.map((b) => {
+              const active = isHqActive ? false : b.is_current;
+              return (
+                <button
+                  key={b.slug}
+                  role="tab"
+                  aria-selected={active}
+                  className="mx-pill mxk-board"
+                  onClick={() => handleBoardSwitch(b.slug)}
+                  disabled={actionBusy === "board-switch"}
+                  title={b.description || b.slug}
+                >
+                  {active && (
+                    <span className="mxk-board-dot" aria-hidden="true" />
+                  )}
+                  <span className="mxk-board-name">{b.name || b.slug}</span>
+                  <span className="mx-meta mxk-board-count">{b.total}</span>
+                </button>
+              );
+            })}
+            {hqAvailable && (
               <button
-                key={b.slug}
-                className={`kanban-board-chip${
-                  active ? " kanban-board-chip-active" : ""
-                }`}
-                onClick={() => handleBoardSwitch(b.slug)}
+                key={HQ_BOARD_SLUG}
+                role="tab"
+                aria-selected={isHqActive}
+                className="mx-pill mxk-board"
+                onClick={() => handleBoardSwitch(HQ_BOARD_SLUG)}
                 disabled={actionBusy === "board-switch"}
-                title={b.description || b.slug}
+                title={t("kanban.hqBoardTooltip")}
               >
-                {active && <span className="kanban-board-dot" />}
-                <span>{b.name || b.slug}</span>
-                <span className="kanban-board-count">{b.total}</span>
+                {isHqActive && (
+                  <span className="mxk-board-dot" aria-hidden="true" />
+                )}
+                <span className="mxk-board-name">HQ (Claw3D)</span>
+                <span className="mx-meta mxk-board-count">
+                  {isHqActive ? tasks.length : ""}
+                </span>
               </button>
-            );
-          })}
-          {hqAvailable && (
-            <button
-              key={HQ_BOARD_SLUG}
-              className={`kanban-board-chip${
-                isHqActive ? " kanban-board-chip-active" : ""
-              }`}
-              onClick={() => handleBoardSwitch(HQ_BOARD_SLUG)}
-              disabled={actionBusy === "board-switch"}
-              title={t("kanban.hqBoardTooltip")}
-            >
-              {isHqActive && <span className="kanban-board-dot" />}
-              <span>HQ (Claw3D)</span>
-              <span className="kanban-board-count">
-                {isHqActive ? tasks.length : ""}
-              </span>
-            </button>
-          )}
+            )}
+          </div>
           {!isHqActive && (
             <button
-              className="kanban-board-chip kanban-board-chip-add"
+              className="mx-pill mxk-board-add"
               onClick={() => setShowNewBoard(true)}
               data-tooltip={t("kanban.newBoardTooltip")}
             >
@@ -790,10 +814,11 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
       )}
 
       {error && (
-        <div className="skills-error">
-          {error}
+        <div className="mxk-error">
+          <span>{error}</span>
           <button
-            className="btn-ghost"
+            className="mxk-error-dismiss"
+            aria-label={t("kanban.dismissError")}
             title={t("kanban.dismissError")}
             onClick={() => setError("")}
           >
@@ -803,13 +828,13 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
       )}
 
       {isHqActive && (
-        <div className="kanban-hq-banner">
+        <div className="mxk-note">
           Read-only mirror of Claw3D&apos;s headquarters board. Edits made here
           would not sync — use the Office screen to manage HQ tasks.
         </div>
       )}
 
-      <div className="kanban-columns">
+      <div className="mxk-columns">
         {renderedColumns.map((col) => {
           const colTasks = tasksByStatus[col.key] || [];
           const draggingTask = draggingTaskId
@@ -819,12 +844,12 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
             !!draggingTask &&
             isValidDragTransition(draggingTask.status, col.key);
           return (
-            <div
+            <section
               key={col.key}
               data-tone={col.tone}
-              className={`kanban-column${
+              className={`mx-card mxk-col${
                 dragOverCol === col.key && canDropHere && !isHqActive
-                  ? " kanban-column-drop"
+                  ? " mxk-col--drop"
                   : ""
               }`}
               onDragOver={(e) => {
@@ -844,30 +869,34 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
                 handleDrop(draggingTask, col.key);
               }}
             >
-              <div className="kanban-column-header">
-                <span className="kanban-column-dot" data-tone={col.tone} />
-                <span className="kanban-column-title">
-                  {t(`kanban.status.${col.key}`)}
-                </span>
-                <span className="kanban-column-count">{colTasks.length}</span>
-              </div>
-              <div className="kanban-column-body">
+              <h2 className="mxk-col-head">
+                <span
+                  className="mxk-dot"
+                  data-tone={col.tone}
+                  aria-hidden="true"
+                />
+                {t(`kanban.status.${col.key}`)}
+                <span className="mxk-grow" />
+                <span className="mx-meta">{colTasks.length}</span>
+              </h2>
+              <div className="mxk-col-body">
                 {colTasks.length === 0 && (
-                  <div className="kanban-column-empty">—</div>
+                  <div className="mxk-col-empty">
+                    {columnEmptyLabel(col.key)}
+                  </div>
                 )}
                 {colTasks.map((task) => {
                   const prio = priorityLabel(task.priority);
                   const age = ageLabel(task.created_at);
                   const skillCount = task.skills?.length || 0;
+                  const running = task.status === "running";
                   return (
-                    <div
+                    <article
                       key={task.id}
                       data-prio={priorityTone(task.priority) || undefined}
-                      className={`kanban-card${
-                        draggingTaskId === task.id
-                          ? " kanban-card-dragging"
-                          : ""
-                      }${isHqActive ? " kanban-card-readonly" : ""}`}
+                      className={`mxk-card${
+                        draggingTaskId === task.id ? " mxk-card--dragging" : ""
+                      }${isHqActive ? " mxk-card--readonly" : ""}`}
                       draggable={!isHqActive}
                       onDragStart={(e) => {
                         if (isHqActive) return;
@@ -884,67 +913,78 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
                         setDetailTaskId(task.id);
                       }}
                     >
-                      <div className="kanban-card-top">
-                        <span className="kanban-card-id">{task.id}</span>
-                        {task.status === "running" && (
-                          <span
-                            className="kanban-live-dot"
-                            title={t("kanban.status.running")}
-                          />
-                        )}
+                      <div className="mxk-card-top">
+                        <span className="mx-meta mxk-card-id">{task.id}</span>
                         {prio && (
-                          <span
-                            className="kanban-pill kanban-pill-prio"
-                            data-prio={priorityTone(task.priority)}
-                          >
+                          <span className={prioChipClass(task.priority)}>
                             {prio}
                           </span>
                         )}
-                        {age && <span className="kanban-card-age">{age}</span>}
+                        <span className="mxk-grow" />
+                        {running && (
+                          <span
+                            className="mxk-live"
+                            title={t("kanban.status.running")}
+                          />
+                        )}
+                        {age && (
+                          <span
+                            className={`mx-meta${
+                              running ? " mxk-age-live" : ""
+                            }`}
+                          >
+                            {age}
+                          </span>
+                        )}
                       </div>
-                      <div className="kanban-card-title">{task.title}</div>
-                      <div className="kanban-card-meta">
+                      <div className="mxk-card-title">{task.title}</div>
+                      <div className="mxk-card-meta">
                         {task.assignee ? (
                           <span
-                            className="kanban-assignee"
+                            className="mxk-assignee"
                             title={`@${task.assignee}`}
                           >
-                            <span className="kanban-avatar">
+                            <span className="mxk-avatar">
                               {initials(task.assignee)}
                             </span>
-                            <span className="kanban-assignee-name">
+                            <span className="mxk-assignee-name">
                               {task.assignee}
                             </span>
                           </span>
                         ) : (
-                          <span className="kanban-assignee kanban-assignee-none">
-                            <span className="kanban-avatar kanban-avatar-none">
+                          <span className="mxk-assignee mxk-assignee-none">
+                            <span className="mxk-avatar mxk-avatar-none">
                               ?
                             </span>
                           </span>
                         )}
                         {task.tenant && (
-                          <span className="kanban-pill">{task.tenant}</span>
+                          <span className="mx-chip">{task.tenant}</span>
+                        )}
+                        {skillCount > 0 && task.assignee && (
+                          <span className="mx-meta" aria-hidden="true">
+                            ·
+                          </span>
                         )}
                         {skillCount > 0 && (
                           <span
-                            className="kanban-pill kanban-pill-skills"
+                            className="mx-meta"
                             title={task.skills.join(", ")}
                           >
                             {skillCount} {skillCount === 1 ? "skill" : "skills"}
                           </span>
                         )}
                       </div>
-                      <div className="kanban-card-actions">
+                      <div className="mxk-card-actions">
                         {isHqActive && (
-                          <span className="kanban-pill kanban-pill-readonly">
-                            read-only
-                          </span>
+                          <span className="mx-chip">read-only</span>
                         )}
                         {!isHqActive && task.status === "triage" && (
                           <button
-                            className="btn-ghost kanban-card-action"
+                            type="button"
+                            className="mxk-card-action"
                             data-tooltip={t("kanban.cardSpecify")}
+                            aria-label={t("kanban.cardSpecify")}
                             title={t("kanban.cardSpecify")}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -957,8 +997,10 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
                         )}
                         {!isHqActive && task.status === "ready" && (
                           <button
-                            className="btn-ghost kanban-card-action"
+                            type="button"
+                            className="mxk-card-action"
                             data-tooltip={t("kanban.cardMarkDone")}
+                            aria-label={t("kanban.cardMarkDone")}
                             title={t("kanban.cardMarkDone")}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -971,8 +1013,10 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
                         )}
                         {!isHqActive && task.status === "running" && (
                           <button
-                            className="btn-ghost kanban-card-action"
+                            type="button"
+                            className="mxk-card-action"
                             data-tooltip={t("kanban.cardReclaim")}
+                            aria-label={t("kanban.cardReclaim")}
                             title={t("kanban.cardReclaim")}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -985,8 +1029,10 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
                         )}
                         {!isHqActive && task.status === "blocked" && (
                           <button
-                            className="btn-ghost kanban-card-action"
+                            type="button"
+                            className="mxk-card-action"
                             data-tooltip={t("kanban.cardUnblock")}
+                            aria-label={t("kanban.cardUnblock")}
                             title={t("kanban.cardUnblock")}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1001,8 +1047,10 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
                           (task.status === "todo" ||
                             task.status === "ready") && (
                             <button
-                              className="btn-ghost kanban-card-action"
+                              type="button"
+                              className="mxk-card-action"
                               data-tooltip={t("kanban.cardBlock")}
+                              aria-label={t("kanban.cardBlock")}
                               title={t("kanban.cardBlock")}
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1015,8 +1063,10 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
                           )}
                         {!isHqActive && (
                           <button
-                            className="btn-ghost kanban-card-action kanban-card-action-danger"
+                            type="button"
+                            className="mxk-card-action mxk-card-action--danger"
                             data-tooltip={t("kanban.cardArchive")}
+                            aria-label={t("kanban.cardArchive")}
                             title={t("kanban.cardArchive")}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1028,11 +1078,11 @@ function Kanban({ profile, visible }: KanbanProps): React.JSX.Element {
                           </button>
                         )}
                       </div>
-                    </div>
+                    </article>
                   );
                 })}
               </div>
-            </div>
+            </section>
           );
         })}
       </div>
