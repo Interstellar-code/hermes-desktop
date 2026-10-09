@@ -17641,7 +17641,11 @@ body:has(.shell-vibrant),
    ======================================================================== */
 
 /* Monospace everywhere under Matrix. FontProvider writes --font-sans inline on
-   <html>, so the theme overrides the family on body instead of the token. */
+   <html>, so the theme re-points the token on body (children inherit it from
+   there) and sets the family on body and form controls directly. */
+[data-theme="matrix"] body {
+  --font-sans: var(--font-mono);
+}
 [data-theme="matrix"] body,
 [data-theme="matrix"] button,
 [data-theme="matrix"] input,

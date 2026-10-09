@@ -1035,7 +1035,9 @@ function Chat({
     >
       <ConfigHealthBanner profile={profile} onOpenDiagnose={onOpenDiagnose} />
 
-      <ChatHeader model={chatDisplayModel} contextUsage={contextUsage} />
+      {messages.length > 0 && (
+        <ChatHeader model={chatDisplayModel} contextUsage={contextUsage} />
+      )}
 
       <div className="chat-body">
         <div className="chat-messages" ref={containerRef}>

@@ -8,7 +8,7 @@ It is a normal entry in `THEMES` ([[src/renderer/src/constants.ts]]) with a `[da
 
 The sidebar, footer actions, status strip and Home empty state get their Matrix look from rules scoped to `[data-theme="matrix"]` at the end of `main.css`, so every other theme renders exactly as before.
 
-The Matrix rules paint the sidebar and status strip opaque, overriding the macOS vibrancy transparency described in [[window-chrome#Translucent sidebar (macOS vibrancy)]] for this theme only. Monospace is applied to `body` and form controls rather than through `--font-sans`, because [[src/renderer/src/components/FontProvider.tsx]] writes `--font-sans` inline on `<html>`.
+The Matrix rules paint the sidebar and status strip opaque, overriding the macOS vibrancy transparency described in [[window-chrome#Translucent sidebar (macOS vibrancy)]] for this theme only. Monospace is applied by re-pointing `--font-sans` on `body` (and setting the family on `body` and form controls), because [[src/renderer/src/components/FontProvider.tsx]] writes `--font-sans` inline on `<html>`, which a `[data-theme]` rule on the same element cannot override.
 
 ## Shared mx- classes
 
