@@ -31,6 +31,11 @@ type PlatformMessage = Record<string, MessagingPlatformTestResponse | null>;
 function Gateway({ profile }: { profile?: string }): React.JSX.Element {
   const { t } = useI18n();
   const [gatewayRunning, setGatewayRunning] = useState(false);
+  const [gatewayDetails, setGatewayDetails] = useState<{
+    pid: number | null;
+    startedAt: number | null;
+    port: number | null;
+  } | null>(null);
   const [gatewayBusy, setGatewayBusy] = useState(false);
   const [gatewayError, setGatewayError] = useState<string | null>(null);
   const [catalog, setCatalog] = useState<MessagingPlatformsResponse | null>(
@@ -76,6 +81,25 @@ function Gateway({ profile }: { profile?: string }): React.JSX.Element {
   useEffect(() => {
     void loadConfig();
   }, [loadConfig]);
+
+  // pid / uptime / port for the status card. Local connections only (the
+  // main process returns nulls otherwise); re-read whenever running flips.
+  useEffect(() => {
+    if (!gatewayRunning) {
+      setGatewayDetails(null);
+      return;
+    }
+    let cancelled = false;
+    void window.hermesAPI
+      .gatewayInfo?.()
+      .then((info) => {
+        if (!cancelled && info?.running) setGatewayDetails(info);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [gatewayRunning]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -402,6 +426,11 @@ function Gateway({ profile }: { profile?: string }): React.JSX.Element {
               </button>
             )}
           </div>
+          {gatewayRunning && gatewayDetails && (
+            <div className="mx-meta gateway-details">
+              {formatGatewayDetails(gatewayDetails)}
+            </div>
+          )}
           {gatewayError && (
             <div className="settings-gateway-error" role="alert">
               {gatewayError}
@@ -968,6 +997,23 @@ function platformStateLabel(
     return { icon: "pending", label: t("gateway.states.ready"), tone: "muted" };
   }
   return { icon: "ok", label: t("gateway.states.configured"), tone: "ok" };
+}
+
+/** "pid 14886 · up 2h 04m · :8642", dropping any part the gateway didn't report. */
+export function formatGatewayDetails(
+  info: { pid: number | null; startedAt: number | null; port: number | null },
+  now: number = Date.now(),
+): string {
+  const parts: string[] = [];
+  if (info.pid !== null) parts.push(`pid ${info.pid}`);
+  if (info.startedAt !== null && now >= info.startedAt) {
+    const mins = Math.floor((now - info.startedAt) / 60000);
+    const h = Math.floor(mins / 60);
+    const m = String(mins % 60).padStart(2, "0");
+    parts.push(h > 0 ? `up ${h}h ${m}m` : `up ${mins % 60}m`);
+  }
+  if (info.port !== null) parts.push(`:${info.port}`);
+  return parts.join(" · ");
 }
 
 export default Gateway;

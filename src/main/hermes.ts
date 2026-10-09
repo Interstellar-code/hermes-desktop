@@ -11,6 +11,7 @@ import {
   mkdtempSync,
   openSync,
   closeSync,
+  statSync,
 } from "fs";
 import { join } from "path";
 import { homedir, tmpdir } from "os";
@@ -3757,6 +3758,36 @@ export function isGatewayRunning(profile?: string): boolean {
   const pid = readPidFile(profile);
   if (!pid) return false;
   return pidIsAliveAs(pid, GATEWAY_IMAGE_PREFIXES);
+}
+
+/**
+ * Read-only facts about the local gateway for the Gateway screen: the PID from
+ * gateway.pid, when that file was written (≈ gateway start), and the profile's
+ * API port. Everything is null when the gateway is not running.
+ */
+export function gatewayInfo(profile?: string): {
+  running: boolean;
+  pid: number | null;
+  startedAt: number | null;
+  port: number | null;
+} {
+  const running = isGatewayRunning(profile);
+  if (!running) return { running, pid: null, startedAt: null, port: null };
+  const entry = readPidFileEntry(profile);
+  let startedAt: number | null = null;
+  if (entry) {
+    try {
+      startedAt = statSync(entry.path).mtimeMs;
+    } catch {
+      startedAt = null;
+    }
+  }
+  return {
+    running,
+    pid: entry?.pid ?? null,
+    startedAt,
+    port: getProfilePort(resolveProfile(profile)),
+  };
 }
 
 export function isApiReady(): boolean {

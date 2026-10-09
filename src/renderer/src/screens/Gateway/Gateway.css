@@ -278,3 +278,8 @@
   border-radius: 6px;
   background: var(--bg-secondary);
 }
+
+.mx-gateway .gateway-details {
+  margin-top: 6px;
+  font-family: var(--font-mono);
+}

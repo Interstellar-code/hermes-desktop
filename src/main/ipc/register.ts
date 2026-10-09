@@ -125,6 +125,7 @@ import {
   startGatewayDetailed,
   stopGateway,
   isGatewayRunning,
+  gatewayInfo,
   testRemoteConnection,
   restartGateway,
   notifyProfileSwitched,
@@ -2137,6 +2138,16 @@ export function registerIpcHandlers(context: IpcContext): void {
     const conn = getConnectionConfig();
     if (conn.mode === "ssh" && conn.ssh) return sshGatewayStatus(conn.ssh);
     return isGatewayRunning();
+  });
+
+  // Local-only details (pid, start time, port) for the Gateway status card.
+  // Remote and SSH connections have no local pid file, so they get nulls.
+  ipcMain.handle("gateway-info", () => {
+    const conn = getConnectionConfig();
+    if (conn.mode !== "local") {
+      return { running: null, pid: null, startedAt: null, port: null };
+    }
+    return gatewayInfo();
   });
 
   // Keep the native window appearance in step with the app's theme so the
