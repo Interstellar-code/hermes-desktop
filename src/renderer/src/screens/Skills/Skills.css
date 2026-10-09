@@ -1,0 +1,127 @@
+/* Matrix Capabilities — Skills tab.
+ *
+ * Scoped to the embedded (Capabilities → Skills) pane on purpose: the same
+ * component also renders inside Discover → Skills, another lane's screen, so
+ * its header/tabs/card grid are deliberately left to main.css and untouched
+ * here. Colours are theme tokens only, so the pane renders under every theme. */
+
+.skills-embedded {
+  gap: 10px;
+  padding: 0;
+  height: auto;
+  overflow: visible;
+}
+
+.skills-embedded .skills-search-row {
+  margin-bottom: 0;
+}
+
+/* The filter box is the artboard's bordered search field: the mx-search shell
+ * draws it, so the inner input drops its own box. */
+.skills-embedded .skills-search.mx-search {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+  padding: 8px 11px;
+  border: 1px solid var(--border-bright);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+}
+
+.skills-embedded .skills-search.mx-search .skills-search-input {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 12px;
+}
+
+.skills-embedded .skills-search-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.skills-embedded .skills-search-actions svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.skills-embedded .skills-category-pills {
+  margin-bottom: 0;
+}
+
+.skills-embedded .skills-pill {
+  letter-spacing: 0.04em;
+}
+
+.skills-embedded .skills-pill-count {
+  font-size: 9.5px;
+  color: var(--text-muted);
+}
+
+.skills-embedded .skills-pill.active .skills-pill-count {
+  color: inherit;
+}
+
+/* ── List rows ─────────────────────────────────────────────────────────────
+ * One row per installed skill: category label, name, description. */
+.skills-embedded .skills-list {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-tertiary);
+  overflow: hidden;
+}
+
+.skills-embedded .skills-list-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 16px;
+  border: 0;
+  border-top: 1px solid var(--border);
+  background: none;
+  text-align: left;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.skills-embedded .skills-list-row:first-child {
+  border-top: 0;
+}
+
+.skills-embedded .skills-list-row:hover {
+  background: var(--bg-hover);
+}
+
+.skills-embedded .skills-list-category {
+  flex-shrink: 0;
+  width: 168px;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skills-embedded .skills-list-name {
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+.skills-embedded .skills-list-description {
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

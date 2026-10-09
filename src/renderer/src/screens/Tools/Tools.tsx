@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useI18n } from "../../components/useI18n";
-import { Wrench, Plug, Puzzle, Search, X } from "../../assets/icons";
+import { Search, X } from "../../assets/icons";
 import { TOOL_ICONS, FALLBACK_TOOL_ICON } from "../../components/toolMeta";
 import Skills from "../Skills/Skills";
 import RemoteNotice from "../../components/RemoteNotice";
 import { OrbLoader } from "../../components/OrbLoader";
+import "./Tools.css";
 
 interface ToolsetInfo {
   key: string;
@@ -340,6 +341,15 @@ function Tools({
   const [registryIcons, setRegistryIcons] = useState<Record<string, string>>(
     {},
   );
+  // Tool count per server, learned from the Test action. Absent until tested:
+  // the STATUS column reports "not tested" instead of guessing a count.
+  const [mcpToolCounts, setMcpToolCounts] = useState<Record<string, number>>(
+    {},
+  );
+  // Installed-skill count, reported up by the embedded Skills pane.
+  const [installedSkillCount, setInstalledSkillCount] = useState<number | null>(
+    null,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -575,6 +585,10 @@ function Tools({
         setMcpError(result.error || t("tools.mcpTestFailed"));
         return;
       }
+      setMcpToolCounts((prev) => ({
+        ...prev,
+        [name]: result.tools?.length ?? 0,
+      }));
       setMcpMessage(
         t("tools.mcpTestPassed", { count: result.tools?.length || 0 }),
       );
@@ -594,6 +608,15 @@ function Tools({
       })
     : mcpServers;
 
+  const enabledToolsets = toolsets.reduce(
+    (n, toolset) => (toolset.enabled ? n + 1 : n),
+    0,
+  );
+
+  const headerSub = profile
+    ? `What ${profile} is allowed to use. Changes apply to new turns.`
+    : "What this profile is allowed to use. Changes apply to new turns.";
+
   if (loading) {
     return (
       <div className="tools-container">
@@ -605,62 +628,89 @@ function Tools({
   }
 
   return (
-    <div className="tools-screen">
-      <div className="tools-tabs">
+    <div className="tools-screen mx-page">
+      <div className="mx-page-header">
+        <div>
+          <h1 className="mx-h1">CAPABILITIES</h1>
+          <p className="mx-sub">{headerSub}</p>
+        </div>
+      </div>
+
+      <div
+        className="mx-tabs tools-tabs tools-cap-tabs"
+        role="tablist"
+        aria-label="Capabilities"
+      >
         {showPlatformToolsets && (
           <button
             type="button"
-            className={`tools-tab ${activeTab === "tools" ? "active" : ""}`}
+            role="tab"
+            aria-selected={activeTab === "tools"}
+            className={`mx-tab ${activeTab === "tools" ? "active" : ""}`}
             onClick={() => setActiveTab("tools")}
           >
-            <Wrench size={16} />
             {t("tools.title")}
-            <span className="tools-tab-count">{toolsets.length}</span>
+            <span className="mx-tab-count">{toolsets.length}</span>
           </button>
         )}
         <button
           type="button"
-          className={`tools-tab ${activeTab === "mcp" ? "active" : ""}`}
+          role="tab"
+          aria-selected={activeTab === "mcp"}
+          className={`mx-tab ${activeTab === "mcp" ? "active" : ""}`}
           onClick={() => setActiveTab("mcp")}
         >
-          <Plug size={16} />
           {t("tools.mcpServers")}
-          <span className="tools-tab-count">{mcpServers.length}</span>
+          <span className="mx-tab-count">{mcpServers.length}</span>
         </button>
         <button
           type="button"
-          className={`tools-tab ${activeTab === "skills" ? "active" : ""}`}
+          role="tab"
+          aria-selected={activeTab === "skills"}
+          className={`mx-tab ${activeTab === "skills" ? "active" : ""}`}
           onClick={() => setActiveTab("skills")}
         >
-          <Puzzle size={16} />
           {t("navigation.skills")}
+          {installedSkillCount !== null && (
+            <span className="mx-tab-count">{installedSkillCount}</span>
+          )}
         </button>
+        {activeTab === "tools" && toolsets.length > 0 && (
+          <span className="tools-tab-summary mx-meta">
+            {enabledToolsets} of {toolsets.length} enabled
+          </span>
+        )}
       </div>
 
       {activeTab === "skills" ? (
-        <div className="tools-skills-pane">
+        <div className="tools-skills-pane" role="tabpanel">
           {remoteMode ? (
             <RemoteNotice feature="Skills" />
           ) : (
-            <Skills profile={profile} embedded onBrowse={onBrowseSkills} />
+            <Skills
+              profile={profile}
+              embedded
+              onBrowse={onBrowseSkills}
+              onInstalledCountChange={setInstalledSkillCount}
+            />
           )}
         </div>
       ) : (
-        <div className="tools-pane">
+        <div className="tools-pane" role="tabpanel">
           {showPlatformToolsets && activeTab === "tools" && (
             <>
               <div className="tools-toolset-grid">
-                {toolsets.map((t) => (
+                {toolsets.map((toolset) => (
                   <div
-                    key={t.key}
-                    className={`tools-toolset-row ${t.enabled ? "is-on" : "is-off"}`}
-                    onClick={() => handleToggle(t.key, t.enabled)}
+                    key={toolset.key}
+                    className={`tools-toolset-row ${toolset.enabled ? "is-on" : "is-off"}`}
+                    onClick={() => handleToggle(toolset.key, toolset.enabled)}
                   >
-                    <ToolIcon toolKey={t.key} />
+                    <ToolIcon toolKey={toolset.key} />
                     <div className="tools-toolset-info">
-                      <div className="tools-card-label">{t.label}</div>
+                      <div className="tools-card-label">{toolset.label}</div>
                       <div className="tools-card-description">
-                        {t.description}
+                        {toolset.description}
                       </div>
                     </div>
                     <label
@@ -669,8 +719,11 @@ function Tools({
                     >
                       <input
                         type="checkbox"
-                        checked={t.enabled}
-                        onChange={() => handleToggle(t.key, t.enabled)}
+                        checked={toolset.enabled}
+                        aria-label={toolset.label}
+                        onChange={() =>
+                          handleToggle(toolset.key, toolset.enabled)
+                        }
                       />
                       <span className="tools-toggle-track" />
                     </label>
@@ -683,11 +736,11 @@ function Tools({
           {activeTab === "mcp" && (
             <div className="tools-section">
               <div className="tools-header tools-header-row">
-                <div className="tools-mcp-search">
+                <label className="tools-mcp-search mx-search">
                   <Search size={15} />
                   <input
-                    className="tools-mcp-search-input"
                     type="text"
+                    aria-label={t("tools.mcpSearch")}
                     placeholder={t("tools.mcpSearch")}
                     value={mcpSearch}
                     onChange={(e) => setMcpSearch(e.target.value)}
@@ -702,12 +755,12 @@ function Tools({
                       <X size={14} />
                     </button>
                   )}
-                </div>
-                <div className="tools-header-actions">
+                </label>
+                <div className="tools-header-actions tools-mcp-actions">
                   {onBrowseMcps && (
                     <button
                       type="button"
-                      className="btn btn-secondary btn-sm"
+                      className="mx-btn mx-btn--ghost"
                       onClick={onBrowseMcps}
                     >
                       <TinyIcon kind="install" />
@@ -716,7 +769,7 @@ function Tools({
                   )}
                   <button
                     type="button"
-                    className="btn btn-secondary btn-sm"
+                    className="mx-btn mx-btn--ghost"
                     onClick={() => void reloadMcp()}
                   >
                     <TinyIcon kind="refresh" />
@@ -724,7 +777,7 @@ function Tools({
                   </button>
                   <button
                     type="button"
-                    className="btn btn-primary btn-sm"
+                    className="mx-btn mx-btn--primary"
                     onClick={openAddMcp}
                   >
                     <TinyIcon kind="plus" />
@@ -759,6 +812,7 @@ function Tools({
                   <div className="mcp-thead">
                     <span>{t("tools.mcpColServer")}</span>
                     <span>{t("tools.mcpColTransport")}</span>
+                    <span>{t("tools.mcpColStatus")}</span>
                     <span>{t("tools.mcpColCommand")}</span>
                     <span className="mcp-th-enabled">
                       {t("tools.mcpColEnabled")}
@@ -771,6 +825,7 @@ function Tools({
                         : [s.command, ...(s.args || [])]
                             .filter(Boolean)
                             .join(" ");
+                    const toolCount = mcpToolCounts[s.name];
                     return (
                       <div
                         key={s.name}
@@ -785,7 +840,11 @@ function Tools({
                         </div>
                         <div className="mcp-cell">
                           <span
-                            className={`mcp-transport ${s.type === "http" ? "is-http" : ""}`}
+                            className={
+                              s.type === "http"
+                                ? "mx-chip mx-chip--info"
+                                : "mx-chip"
+                            }
                           >
                             {s.type === "http"
                               ? t("tools.http")
@@ -793,6 +852,18 @@ function Tools({
                                 ? t("tools.stdio")
                                 : t("tools.unknown")}
                           </span>
+                        </div>
+                        <div className="mcp-cell mcp-cell-status">
+                          {!s.enabled ? (
+                            <span className="mx-chip">off</span>
+                          ) : toolCount === undefined ? (
+                            <span className="mx-chip">not tested</span>
+                          ) : (
+                            <span className="mx-chip mx-chip--ok">
+                              <span aria-hidden="true">●</span>
+                              {toolCount} {toolCount === 1 ? "tool" : "tools"}
+                            </span>
+                          )}
                         </div>
                         <div className="mcp-cell mcp-cell-cmd" title={cmd}>
                           <span className="mcp-cmd">
@@ -834,6 +905,7 @@ function Tools({
                             <input
                               type="checkbox"
                               checked={s.enabled}
+                              aria-label={s.name}
                               disabled={mcpBusy === `toggle:${s.name}`}
                               onChange={() =>
                                 void handleMcpEnabled(s.name, !s.enabled)
