@@ -667,6 +667,17 @@ function Layout({
     [runs, activeRunId, handleActivateRun, connectionId, activeProfile, goTo],
   );
 
+  // Home's "Continue" card resumes a session through this event, the same way
+  // "navigation:goto" lets screens switch views without a prop chain.
+  useEffect(() => {
+    const onResume = (e: Event): void => {
+      const sessionId = (e as CustomEvent<string>).detail;
+      if (sessionId) void handleResumeSession(sessionId);
+    };
+    window.addEventListener("session:resume", onResume);
+    return () => window.removeEventListener("session:resume", onResume);
+  }, [handleResumeSession]);
+
   const toggleSidebar = useCallback(() => {
     setSidebarCollapsed((collapsed) => {
       const next = !collapsed;

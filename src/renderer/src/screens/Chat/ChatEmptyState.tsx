@@ -2,6 +2,7 @@ import { memo } from "react";
 import { Search, Clock, Mail, Code, ChartLine, Bell } from "lucide-react";
 import titleLine from "../../assets/title-line.svg";
 import { useI18n } from "../../components/useI18n";
+import { HomeCards } from "./HomeCards";
 
 interface Suggestion {
   i18nKey: string;
@@ -55,10 +56,12 @@ const RAIN_COLUMNS = [
 
 interface ChatEmptyStateProps {
   onSelectSuggestion: (text: string) => void;
+  profile?: string;
 }
 
 export const ChatEmptyState = memo(function ChatEmptyState({
   onSelectSuggestion,
+  profile,
 }: ChatEmptyStateProps): React.JSX.Element {
   const { t } = useI18n();
 
@@ -95,6 +98,7 @@ export const ChatEmptyState = memo(function ChatEmptyState({
           </button>
         ))}
       </div>
+      <HomeCards profile={profile} />
     </div>
   );
 });

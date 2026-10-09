@@ -18051,3 +18051,41 @@ body:has(.shell-vibrant),
     animation: none;
   }
 }
+
+/* ----- Home "at a glance" cards (all themes; Matrix accents via tokens) ----- */
+.home-cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+.home-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 220px;
+  padding: 10px 14px;
+  text-align: left;
+  color: var(--text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+.home-card:hover {
+  border-color: var(--border-bright);
+}
+.home-card-title {
+  font-size: 11.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-card--info .home-card-label {
+  color: var(--mx-cyan, var(--info, var(--accent-text)));
+}
+.home-card--warn {
+  border-color: color-mix(in srgb, var(--warning) 45%, transparent);
+}
+.home-card--warn .home-card-label {
+  color: var(--warning);
+}

@@ -1042,7 +1042,10 @@ function Chat({
       <div className="chat-body">
         <div className="chat-messages" ref={containerRef}>
           {messages.length === 0 ? (
-            <ChatEmptyState onSelectSuggestion={handleSuggestion} />
+            <ChatEmptyState
+              onSelectSuggestion={handleSuggestion}
+              profile={profile}
+            />
           ) : (
             <MessageList
               messages={messages}
