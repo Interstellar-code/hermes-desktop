@@ -171,8 +171,14 @@ function Skills({
     return counts;
   }, [installedSkills]);
 
+  // A refresh can remove the selected category; treat a stale pick as "all".
+  const activeCategory =
+    installedCategory !== null &&
+    installedCategories.includes(installedCategory)
+      ? installedCategory
+      : null;
   const embeddedRows = filteredInstalled.filter(
-    (s) => installedCategory === null || s.category === installedCategory,
+    (s) => activeCategory === null || s.category === activeCategory,
   );
 
   if (loading) {
@@ -289,7 +295,7 @@ function Skills({
           {installedCategories.length > 0 && (
             <div className="skills-category-pills">
               <button
-                className={`skills-pill ${installedCategory === null ? "active" : ""}`}
+                className={`skills-pill ${activeCategory === null ? "active" : ""}`}
                 onClick={() => setInstalledCategory(null)}
               >
                 {t("skills.all")}{" "}
@@ -300,9 +306,9 @@ function Skills({
               {installedCategories.map((cat) => (
                 <button
                   key={cat}
-                  className={`skills-pill ${installedCategory === cat ? "active" : ""}`}
+                  className={`skills-pill ${activeCategory === cat ? "active" : ""}`}
                   onClick={() =>
-                    setInstalledCategory(installedCategory === cat ? null : cat)
+                    setInstalledCategory(activeCategory === cat ? null : cat)
                   }
                 >
                   {cat}{" "}
