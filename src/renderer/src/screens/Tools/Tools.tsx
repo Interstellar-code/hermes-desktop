@@ -5,6 +5,7 @@ import { TOOL_ICONS, FALLBACK_TOOL_ICON } from "../../components/toolMeta";
 import Skills from "../Skills/Skills";
 import RemoteNotice from "../../components/RemoteNotice";
 import { OrbLoader } from "../../components/OrbLoader";
+import { McpStatusChip } from "./McpStatusChip";
 import "./Tools.css";
 
 interface ToolsetInfo {
@@ -516,6 +517,14 @@ function Tools({
       }
       closeMcpModal();
       setMcpMessage(t(editing ? "tools.mcpUpdated" : "tools.mcpAdded"));
+      // Clear stale tool counts: the old name (on rename) and the new name
+      // (config may have changed) both need a fresh Test.
+      setMcpToolCounts((prev) => {
+        const next = { ...prev };
+        if (editing) delete next[editing];
+        delete next[input.name];
+        return next;
+      });
       await reloadMcp();
     } catch (err) {
       setMcpError(
@@ -537,6 +546,11 @@ function Tools({
         return;
       }
       setMcpMessage(t("tools.mcpRemoved"));
+      setMcpToolCounts((prev) => {
+        const next = { ...prev };
+        delete next[name];
+        return next;
+      });
       await reloadMcp();
     } catch (err) {
       setMcpError((err as Error).message || t("tools.mcpRemoveFailed"));
@@ -854,16 +868,10 @@ function Tools({
                           </span>
                         </div>
                         <div className="mcp-cell mcp-cell-status">
-                          {!s.enabled ? (
-                            <span className="mx-chip">off</span>
-                          ) : toolCount === undefined ? (
-                            <span className="mx-chip">not tested</span>
-                          ) : (
-                            <span className="mx-chip mx-chip--ok">
-                              <span aria-hidden="true">●</span>
-                              {toolCount} {toolCount === 1 ? "tool" : "tools"}
-                            </span>
-                          )}
+                          <McpStatusChip
+                            enabled={s.enabled}
+                            toolCount={toolCount}
+                          />
                         </div>
                         <div className="mcp-cell mcp-cell-cmd" title={cmd}>
                           <span className="mcp-cmd">
